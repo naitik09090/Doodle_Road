@@ -36,7 +36,11 @@ const LEVEL_CONFIGS = [
         gridColor: 'rgba(255, 180, 150, 0.15)',
         pathColor: '#ff6b6b',
         carColor: '#ff4c5b',
-        obstacles: []
+        obstacles: [
+            { x: 500, y: 255, w: 40, h: 40 },
+            { x: 500, y: 210, w: 40, h: 40 },
+            { x: 500, y: 300, w: 40, h: 40 },
+        ]
     },
     {
         level: 2,

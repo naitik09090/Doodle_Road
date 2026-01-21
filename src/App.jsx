@@ -3,7 +3,8 @@ import './App.css'
 // import Doddle_Level from './Components/Doddle_Level.jsx'
 // import Doddle_Level1 from './Components/Doddle_Level1.jsx'
 // import Level from './Components/Level.jsx'
-import Level_2 from './Components/Level_2.jsx'
+// import Level_2 from './Components/Level_2.jsx'
+import LevelData from './Components/LevelData.jsx'
 // import Level_3 from './Components/Level_3.jsx'
 import './css/Level.scss'
 // import Level_Main from './Components/Level_Main.jsx'
@@ -16,7 +17,8 @@ function App() {
       {/* <Doddle_Level /> */}
       {/* <Doddle_Level1 /> */}
       {/* <Level /> */}
-      <Level_2 />
+      {/* <Level_2 /> */}
+      <LevelData />
       {/* <Level_3 /> */}
       {/* <Level_Main /> */}
     </>

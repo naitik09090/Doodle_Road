@@ -2,9 +2,70 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import fuelIcon from "../assets/fuel.png"
 
+
+const fuelImg = new Image();
+fuelImg.src = fuelIcon;
+
+fuelImg.onload = () => {
+    console.log("Fuel icon loaded");
+};
+
+
+
+
 // કેનવાસનું size
-const WIDTH = 1200;
-const HEIGHT = 600;
+// const WIDTH = 1200;
+// const HEIGHT = 600;
+
+// 21-01 🎯 Base Canvas Size
+const BASE_WIDTH = 1250;
+const BASE_HEIGHT = 600;
+
+// 🎯 Game Canvas Size (use everywhere)
+const WIDTH = BASE_WIDTH;
+const HEIGHT = BASE_HEIGHT;
+
+
+// 24-12 -- animation//
+let finishConfetti = [];
+let finishOverlayAlpha = 0;
+let finishAnimActive = false;
+let finishPhase = 0;      // 0 = bright, 1 = dark
+let finishTimer = 0;
+let finishHold = false;     // 🔒 animation lock until click
+//let burstCooldown = 0;   // 🔥 controlled extra bursts
+
+
+// 26-12 --winner//z
+// // // 🏆 WINNER TEXT
+let winnerScale = 0;
+let winnerAlpha = 1;
+let winnerGlow = 0;
+let winnerPulse = 0;
+let showNextBanner = false;  // 31-12//
+
+function spawnFinishBlast(WIDTH, HEIGHT) {
+    const cx = WIDTH / 2;
+    const cy = HEIGHT / 2;
+
+    for (let i = 0; i < 200; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 10 + 6;
+
+        finishConfetti.push({
+            x: cx,
+            y: cy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 160,
+            maxLife: 160,
+            size: Math.random() * 6 + 4, // 🔥 BIGGER
+            color: `hsl(${Math.random() * 360}, 100%, 65%)`,
+            line: Math.random() > 0.3
+        });
+    }
+}
+
 
 // LEVEL CONFIGURATIONS
 // const LEVEL_CONFIGS = [
@@ -26,6 +87,7 @@ function drawObstacles(ctx, obstacles) {
         ctx.fillRect(o.x, o.y, o.w, o.h);
     }
 }
+
 // ⭐ Petrol Pump Collision Helper
 function checkPetrolPumpCollision(car, pump) {
     const dx = car.x - pump.x;
@@ -33,26 +95,32 @@ function checkPetrolPumpCollision(car, pump) {
     return Math.hypot(dx, dy) < pump.r + car.w / 2;
 }
 
+
+
 const LEVEL_CONFIGS = [
     {
         level: 1,
         name: 'Easy Start',
         carStart: { x: 150, y: HEIGHT / 2 },
         finishPos: { x: WIDTH - 150, y: HEIGHT / 2 },
-        playSpeed: 50,
+        playSpeed: 90,
         bgColor: '#fff9f0',
         gridColor: 'rgba(255, 180, 150, 0.15)',
         pathColor: '#ff6b6b',
         carColor: '#ff4c5b',
-        obstacles: [],
-    },
 
+        // obstacles: []
+        speedBoost: [
+            { x: 500, y: 250, r: 24, multiplier: 2, duration: 3000 },
+            // { x: 800, y: 250, r: 24, multiplier: 3, duration: 2000 },
+        ]
+    },
     {
         level: 2,
         name: 'Curve Master',
         carStart: { x: 150, y: HEIGHT / 2.2 },
         finishPos: { x: WIDTH - 100, y: HEIGHT / 2.2 },
-        playSpeed: 55,
+        playSpeed: 100,
         bgColor: '#f0f9ff',
         gridColor: 'rgba(150, 200, 255, 0.15)',
         pathColor: '#4c9aff',
@@ -68,7 +136,7 @@ const LEVEL_CONFIGS = [
         name: 'Box Avoider',
         carStart: { x: 100, y: HEIGHT / 2 },
         finishPos: { x: WIDTH - 80, y: HEIGHT / 2 },
-        playSpeed: 58,
+        playSpeed: 100,
         bgColor: '#f0fff4',
         gridColor: 'rgba(150, 255, 180, 0.15)',
         pathColor: '#def50cff',
@@ -82,7 +150,7 @@ const LEVEL_CONFIGS = [
         name: 'Zigzag',
         carStart: { x: 150, y: 100 },
         finishPos: { x: WIDTH - 100, y: HEIGHT - 100 },
-        playSpeed: 65,
+        playSpeed: 100,
         bgColor: '#fffaf0',
         gridColor: 'rgba(255, 200, 100, 0.15)',
         pathColor: '#ed8936',
@@ -97,7 +165,7 @@ const LEVEL_CONFIGS = [
         name: 'Challenge',
         carStart: { x: 150, y: HEIGHT - 300 },
         finishPos: { x: WIDTH - 100, y: HEIGHT - 100 },
-        playSpeed: 70,
+        playSpeed: 100,
         bgColor: '#faf5ff',
         gridColor: 'rgba(200, 150, 255, 0.15)',
         pathColor: '#9f7aea',
@@ -240,9 +308,18 @@ const LEVEL_CONFIGS = [
         gridColor: 'rgba(160,240,180,0.12)',
         pathColor: '#2d6a4f',
         carColor: '#1b4332',
+        // obstacles: [
+        //     { x: 400, y: 120, w: 80, h: 40, moving: true, dx: 0, dy: 1.6, yRange: [120, 360] },
+        //     { x: 650, y: 360, w: 80, h: 40, moving: true, dx: 0, dy: -1.2, yRange: [120, 360] }
+        // ]
         obstacles: [
-            { x: 400, y: 120, w: 80, h: 40, moving: true, dx: 0, dy: 1.6, yRange: [120, 360] },
-            { x: 650, y: 360, w: 80, h: 40, moving: true, dx: 0, dy: -1.2, yRange: [120, 360] }
+            { x: 350, y: 0, w: 40, h: 220 },
+            { x: 350, y: 320, w: 40, h: 200 },
+
+            { x: 600, y: 150, w: 40, h: 300 },
+
+            { x: 850, y: 0, w: 40, h: 250 },
+            { x: 850, y: 350, w: 40, h: 200 },
         ]
     },
     {
@@ -255,10 +332,13 @@ const LEVEL_CONFIGS = [
         gridColor: 'rgba(255,200,150,0.12)',
         pathColor: '#ff7b00',
         carColor: '#b45309',
+        petrolPump: [{ x: 520, y: 320, r: 26 }],
         obstacles: [
-            { x: 350, y: 200, w: 60, h: 60, moving: true, dx: 2.5, xRange: [250, 450] },
-            { x: 600, y: 340, w: 60, h: 60, moving: true, dx: -2, xRange: [500, 700] },
-            { x: 820, y: 260, w: 60, h: 60 }
+            { x: 300, y: 120, w: 60, h: 300, moving: true, dy: 2.5, yRange: [120, 350], bidir: true },
+            { x: 420, y: 200, w: 80, h: 60 },
+            { x: 550, y: 280, w: 70, h: 70, moving: true, dx: 2, xRange: [500, 650], bidir: true },
+            { x: 700, y: 180, w: 90, h: 60 },
+            { x: 850, y: 220, w: 60, h: 60, moving: true, dy: -2.3, yRange: [150, 350], bidir: true },
         ]
     },
     {
@@ -271,13 +351,15 @@ const LEVEL_CONFIGS = [
         gridColor: 'rgba(255,180,200,0.12)',
         pathColor: '#d0006f',
         carColor: '#7a0826',
+        // petrolPump: [{ x: 520, y: 120, r: 26 }],
+        petrolPump: [{ x: 970, y: 370, r: 26 }],
         obstacles: [
-            // tight staggered blocks and a fast moving square
-            { x: 320, y: 160, w: 60, h: 60 },
-            { x: 380, y: 220, w: 60, h: 60 },
-            { x: 440, y: 280, w: 60, h: 60 },
-            { x: 700, y: 250, w: 70, h: 70, moving: true, dx: 0, dy: 3, yRange: [120, 420] }
-        ]
+            { x: 300, y: 80, w: 120, h: 90 },
+            { x: 300, y: 260, w: 120, h: 120 },
+            { x: 520, y: 240, w: 120, h: 120 },
+            { x: 740, y: 120, w: 120, h: 120 },
+            { x: 960, y: 360, w: 120, h: 120 },
+        ],
     },
     {
         level: 14,
@@ -289,11 +371,15 @@ const LEVEL_CONFIGS = [
         gridColor: 'rgba(160,180,255,0.12)',
         pathColor: '#274c77',
         carColor: '#1f3a93',
+        //petrolPump: [{ x: 520, y: 120, r: 26 }],
+        petrolPump: [{ x: 970, y: 370, r: 26 }],
         obstacles: [
-            // two narrow vertical walls that slowly close and open (simulate moving by dy on opposite directions)
-            { x: 380, y: 100, w: 30, h: 420, moving: true, dx: 0.85, xRange: [380, 440], bidir: true },
-            { x: 680, y: 80, w: 30, h: 440, moving: true, dx: -0.85, xRange: [640, 700], bidir: true },
-            { x: 860, y: 250, w: 60, h: 60 }
+            // two narrow vertical walls that move closer/further
+            { x: 380, y: 100, w: 30, h: 420, moving: true, dx: 1.8, xRange: [380, 440], bidir: true },
+            { x: 680, y: 80, w: 30, h: 440, moving: true, dx: -1.8, xRange: [640, 700], bidir: true },
+
+            // final small moving blocker
+            { x: 820, y: 260, w: 60, h: 60, moving: true, dy: 2.5, yRange: [180, 360], bidir: true },
         ]
     },
 
@@ -309,11 +395,15 @@ const LEVEL_CONFIGS = [
         gridColor: "rgba(255,200,80,0.15)",
         pathColor: "#c99a00",
         carColor: "#8b6800",
+        petrolPump: [{ x: 890, y: 290, r: 26 }],
         obstacles: [
-            { x: 300, y: 150, w: 80, h: 40 },
-            { x: 420, y: 280, w: 80, h: 40 },
-            { x: 540, y: 160, w: 80, h: 40 },
-            { x: 660, y: 300, w: 80, h: 40 },
+            { x: 340, y: 100, w: 50, h: 420, moving: true, dy: 3.2, yRange: [120, 360], bidir: true },
+            { x: 720, y: 100, w: 50, h: 420, moving: true, dy: -3.2, yRange: [120, 360], bidir: true },
+
+            // chaotic moving pinballs
+            { x: 900, y: 160, w: 70, h: 70, moving: true, dx: 3.5, xRange: [850, 980], bidir: true },
+            { x: 900, y: 330, w: 70, h: 70, moving: true, dx: -3.5, xRange: [850, 980], bidir: true },
+            { x: 800, y: 250, w: 60, h: 60, moving: true, dy: 3, yRange: [180, 360], bidir: true },
         ]
     },
     {
@@ -326,32 +416,21 @@ const LEVEL_CONFIGS = [
         gridColor: "rgba(100,150,255,0.12)",
         pathColor: "#2563eb",
         carColor: "#1e40af",
+        petrolPump: [{ x: 890, y: 290, r: 26 }],
         obstacles: [
-            { x: 380, y: 80, w: 30, h: 420, moving: true, dy: 1.8, yRange: [80, 350], bidir: true },
-            { x: 620, y: 100, w: 30, h: 400, moving: true, dy: -1.8, yRange: [120, 420], bidir: true },
-            { x: 800, y: 250, w: 60, h: 60 }
+            // top & bottom walls (same)
+            { x: 260, y: 120, w: 640, h: 36 },
+            { x: 260, y: 460, w: 640, h: 36 },
+
+            // snake pillars (more gap + thinner)
+            { x: 360, y: 210, w: 32, h: 180 },
+            { x: 500, y: 150, w: 32, h: 180 },
+            { x: 640, y: 210, w: 32, h: 180 },
+            { x: 780, y: 150, w: 32, h: 180 }
         ]
     },
     {
         level: 17,
-        name: "Crossfire Path",
-        carStart: { x: 130, y: HEIGHT / 2 },
-        finishPos: { x: WIDTH - 130, y: HEIGHT / 2 },
-        playSpeed: 95,
-        bgColor: "#fff5f5",
-        gridColor: "rgba(255,120,120,0.1)",
-        pathColor: "#d62f2f",
-        carColor: "#7a0f0f",
-        obstacles: [
-            { x: 360, y: 200, w: 60, h: 60, moving: true, dx: 2.5, xRange: [300, 500], bidir: true },
-            { x: 360, y: 320, w: 60, h: 60, moving: true, dx: -2.5, xRange: [300, 500], bidir: true },
-
-            { x: 700, y: 180, w: 60, h: 60, moving: true, dx: 2.2, xRange: [650, 820], bidir: true },
-            { x: 700, y: 330, w: 60, h: 60, moving: true, dx: -2.2, xRange: [650, 820], bidir: true },
-        ]
-    },
-    {
-        level: 18,
         name: "Wave Tunnel",
         carStart: { x: 140, y: HEIGHT / 2 },
         finishPos: { x: WIDTH - 150, y: HEIGHT / 2 },
@@ -360,14 +439,16 @@ const LEVEL_CONFIGS = [
         gridColor: "rgba(120,255,140,0.12)",
         pathColor: "#19944b",
         carColor: "#0d5e2d",
+        petrolPump: [{ x: 890, y: 290, r: 26 }],
         obstacles: [
-            { x: 300, y: 120, w: 40, h: 400, moving: true, dx: 1.5, xRange: [280, 350], bidir: true },
-            { x: 500, y: 100, w: 40, h: 420, moving: true, dx: -1.5, xRange: [460, 540], bidir: true },
-            { x: 700, y: 120, w: 40, h: 400, moving: true, dx: 1.5, xRange: [680, 760], bidir: true },
+            { x: 280, y: 200, w: 90, h: 90 },
+            { x: 420, y: 120, w: 60, h: 220 },
+            { x: 540, y: 380, w: 180, h: 32 },
+            { x: 780, y: 180, w: 40, h: 260 }
         ]
     },
     {
-        level: 19,
+        level: 18,
         name: "Chaos Grid",
         carStart: { x: 120, y: HEIGHT / 2 },
         finishPos: { x: WIDTH - 130, y: HEIGHT / 2 },
@@ -376,145 +457,291 @@ const LEVEL_CONFIGS = [
         gridColor: "rgba(180,140,255,0.12)",
         pathColor: "#7e22ce",
         carColor: "#581c87",
+        petrolPump: [
+            { x: 700, y: 270, r: 30 }
+        ],
         obstacles: [
-            { x: 300, y: 180, w: 60, h: 60 },
-            { x: 350, y: 320, w: 60, h: 60 },
-            { x: 450, y: 250, w: 70, h: 70, moving: true, dy: 2.2, yRange: [150, 370], bidir: true },
+            // Small rapidly moving mines everywhere
+            { x: 280, y: 180, w: 45, h: 45, moving: true, dx: 5, xRange: [250, 400], bidir: true },
+            { x: 320, y: 250, w: 45, h: 45, moving: true, dy: 4.5, yRange: [200, 340], bidir: true },
+            { x: 380, y: 320, w: 45, h: 45, moving: true, dx: -5, xRange: [280, 420], bidir: true },
 
-            { x: 620, y: 150, w: 60, h: 60, moving: true, dx: 2.0, xRange: [580, 760], bidir: true },
-            { x: 720, y: 330, w: 60, h: 60 },
+            { x: 520, y: 160, w: 45, h: 45, moving: true, dy: -4.8, yRange: [160, 300], bidir: true },
+            { x: 580, y: 360, w: 45, h: 45, moving: true, dx: 4.5, xRange: [480, 620], bidir: true },
+            { x: 620, y: 220, w: 45, h: 45, moving: true, dy: 4.2, yRange: [180, 320], bidir: true },
+
+            { x: 780, y: 180, w: 45, h: 45, moving: true, dx: -4.8, xRange: [680, 820], bidir: true },
+            { x: 820, y: 280, w: 45, h: 45, moving: true, dy: -4.5, yRange: [200, 340], bidir: true },
+            { x: 880, y: 340, w: 45, h: 45, moving: true, dx: 5, xRange: [780, 920], bidir: true },
+
+            { x: 950, y: 220, w: 45, h: 45, moving: true, dy: 4.8, yRange: [180, 320], bidir: true },
+        ]
+    },
+    {
+        level: 19,
+        name: "Narrow Gauntlet",
+        carStart: { x: 140, y: HEIGHT / 2 },
+        finishPos: { x: WIDTH - 150, y: HEIGHT / 2 },
+        playSpeed: 112,
+        bgColor: "#fff0f3",
+        gridColor: "rgba(255,100,140,0.12)",
+        pathColor: "#e43052",
+        carColor: "#8e0f20",
+
+        // petrolPump: { x: 560, y: 180, w: 70, h: 70, mandatory: true },
+
+        petrolPump: [
+            // { x: 640, y: HEIGHT / 2 - 30, r: 26 }
+            { x: 680, y: HEIGHT / 4 - 60, r: 30 }
+        ],
+        obstacles: [
+            // two narrow vertical walls that move closer/further
+            { x: 380, y: 100, w: 30, h: 420, moving: true, dx: 1.8, xRange: [380, 440], bidir: true },
+            { x: 680, y: 80, w: 30, h: 440, moving: true, dx: -1.8, xRange: [640, 700], bidir: true },
+
+            // final small moving blocker
+            { x: 820, y: 260, w: 60, h: 60, moving: true, dy: 2.5, yRange: [180, 360], bidir: true },
         ]
     },
     {
         level: 20,
-        name: "The Gauntlet",
-        carStart: { x: 120, y: HEIGHT / 2 },
-        finishPos: { x: WIDTH - 140, y: HEIGHT / 2 },
-        playSpeed: 110,
-        bgColor: "#fff0f0",
-        gridColor: "rgba(255,150,150,0.12)",
-        pathColor: "#b80000",
-        carColor: "#5a0000",
+        name: "Pinball Madness",
+        carStart: { x: 120, y: HEIGHT / 3 },
+        finishPos: { x: WIDTH - 150, y: HEIGHT / 1.5 },
+        playSpeed: 118,
+        bgColor: "#eef9f1",
+        gridColor: "rgba(140,255,160,0.12)",
+        pathColor: "#1f9850",
+        carColor: "#0d6e32",
+        petrolPump: [
+            // { x: 850, y: HEIGHT / 2 + 30, r: 30 }
+            { x: 890, y: HEIGHT / 5 + 35, r: 26 }
+        ],
         obstacles: [
-            { x: 300, y: 80, w: 50, h: 430, moving: true, dy: 2.4, yRange: [80, 350], bidir: true },
-            { x: 550, y: 100, w: 50, h: 400, moving: true, dy: -2.4, yRange: [120, 420], bidir: true },
-
-            { x: 780, y: 250, w: 80, h: 80, moving: true, dx: 3.0, xRange: [720, 880], bidir: true },
+            // static angled blockers
+            { x: 300, y: 150, w: 60, h: 80 },
+            { x: 400, y: 280, w: 60, h: 80 },
+            { x: 500, y: 170, w: 50, h: 420, moving: true, dx: 2, xRange: [480, 580], bidir: true },
+            { x: 820, y: 150, w: 60, h: 350 },
+            { x: 720, y: 220, w: 70, h: 70, moving: true, dy: 2.8, yRange: [180, 360], bidir: true },
         ]
     },
-
-    // ⭐ NEW LEVELS BELOW ⭐  
-
     {
         level: 21,
-        name: "Fuel Rush",
-        carStart: { x: 120, y: HEIGHT / 2 },
-        finishPos: { x: WIDTH - 140, y: HEIGHT / 2 },
-        playSpeed: 115,
-        bgColor: "#f0fff4",
-        gridColor: "rgba(150,255,150,0.12)",
-        pathColor: "#008f3d",
-        carColor: "#004f22",
+        name: "Ultimate Refuel Gauntlet",
+        carStart: { x: 130, y: HEIGHT / 2 },
+        finishPos: { x: WIDTH - 160, y: HEIGHT / 2 },
+        playSpeed: 125,
+        bgColor: "#fff0f0",
+        gridColor: "rgba(255,100,100,0.12)",
+        pathColor: "#c60000",
+        carColor: "#720000",
         petrolPump: [
-            { x: 520, y: HEIGHT / 2, r: 26 }
+            // { x: 720, y: HEIGHT / 2, r: 30 }
+            { x: 850, y: HEIGHT / 3, r: 30 }
         ],
-
         obstacles: [
-            { x: 300, y: 90, w: 50, h: 420, moving: true, dy: 2.8, yRange: [90, 380], bidir: true },
-            { x: 580, y: 110, w: 50, h: 400, moving: true, dy: -2.6, yRange: [110, 420], bidir: true },
-            { x: 820, y: 260, w: 80, h: 80, moving: true, dx: 3.2, xRange: [740, 900], bidir: true },
+            { x: 340, y: 100, w: 50, h: 420, moving: true, dy: 3.2, yRange: [120, 360], bidir: true },
+            { x: 720, y: 100, w: 50, h: 420, moving: true, dy: -3.2, yRange: [120, 360], bidir: true },
+
+            // chaotic moving pinballs
+            { x: 900, y: 160, w: 70, h: 70, moving: true, dx: 3.5, xRange: [850, 980], bidir: true },
+            { x: 900, y: 330, w: 70, h: 70, moving: true, dx: -3.5, xRange: [850, 980], bidir: true },
+            { x: 800, y: 250, w: 60, h: 60, moving: true, dy: 3, yRange: [180, 360], bidir: true },
         ]
     },
     {
         level: 22,
-        name: "Split Decision",
-        carStart: { x: 120, y: HEIGHT / 2 + 30 },
-        finishPos: { x: WIDTH - 140, y: HEIGHT / 2 - 30 },
-        playSpeed: 120,
-        bgColor: "#fff8e6",
-        gridColor: "rgba(255,210,140,0.15)",
-        pathColor: "#c96b00",
-        carColor: "#7a3f00",
-
+        name: "The Final Showdown",
+        carStart: { x: 130, y: HEIGHT / 2 },
+        finishPos: { x: WIDTH - 160, y: HEIGHT / 2 },
+        playSpeed: 145,
+        bgColor: "#1a0a0a",
+        gridColor: "rgba(255,50,50,0.2)",
+        pathColor: "#ff0000",
+        carColor: "#cc0000",
         petrolPump: [
-            //{ x: 420, y: 160, r: 26 },
-            // { x: 760, y: 340, r: 26 }
-            { x: 780, y: 360, r: 35 }
+            { x: 880, y: 280, r: 28 }
         ],
-
         obstacles: [
-            { x: 320, y: 100, w: 60, h: 420, moving: true, dy: 3.0, yRange: [100, 450], bidir: true },
-            { x: 620, y: 260, w: 90, h: 90, moving: true, dx: -3.5, xRange: [560, 740], bidir: true },
-            { x: 900, y: 90, w: 60, h: 450, moving: true, dy: -3.2, yRange: [90, 460], bidir: true },
+            // ULTIMATE CHALLENGE - Everything combined
+            // Rotating threats
+            { x: 450, y: 180, w: 65, h: 65, moving: true, rotation: true, rotSpeed: 0.045, pivot: { x: 500, y: 230 }, radius: 80 },
+            { x: 550, y: 180, w: 65, h: 65, moving: true, rotation: true, rotSpeed: -0.045, pivot: { x: 500, y: 230 }, radius: 80 },
+
+            { x: 650, y: 320, w: 65, h: 65, moving: true, rotation: true, rotSpeed: 0.05, pivot: { x: 700, y: 370 }, radius: 80 },
+            { x: 750, y: 320, w: 65, h: 65, moving: true, rotation: true, rotSpeed: -0.05, pivot: { x: 700, y: 370 }, radius: 80 },
+
+            // Diagonal chaos
+            { x: 300, y: 180, w: 55, h: 55, moving: true, dx: 5.5, dy: 4.5, xRange: [280, 450], yRange: [160, 320], bidir: true },
+            { x: 350, y: 340, w: 55, h: 55, moving: true, dx: -5.2, dy: -4.2, xRange: [280, 450], yRange: [250, 380], bidir: true },
+
+            { x: 850, y: 160, w: 60, h: 60, moving: true, dx: 5, dy: -4.8, xRange: [800, 1000], yRange: [140, 300], bidir: true },
+            { x: 900, y: 350, w: 60, h: 60, moving: true, dx: -5.5, dy: 5, xRange: [800, 1000], yRange: [260, 380], bidir: true },
+
+            // Fast vertical sweepers
+            { x: 550, y: 100, w: 40, h: 380, moving: true, dy: 5.5, yRange: [100, 400], bidir: true },
+            { x: 650, y: 400, w: 40, h: 380, moving: true, dy: -6, yRange: [100, 400], bidir: true },
         ]
     },
     {
         level: 23,
-        name: "Crossfire",
+        name: "Laser Grid",
         carStart: { x: 130, y: HEIGHT / 2 },
-        finishPos: { x: WIDTH - 150, y: HEIGHT / 2 },
-        playSpeed: 128,
-        bgColor: "#eef0ff",
-        gridColor: "rgba(150,150,255,0.12)",
-        pathColor: "#1a2dbb",
-        carColor: "#0d145a",
+        finishPos: { x: WIDTH - 160, y: HEIGHT / 2 },
+        playSpeed: 160,
+        bgColor: "#1a0000",
+        gridColor: "rgba(255,0,0,0.2)",
+        pathColor: "#ff0000",
+        carColor: "#cc0000",
         petrolPump: [
-            // { x: 640, y: HEIGHT / 2 - 30, r: 26 }
-            { x: 680, y: HEIGHT / 4 - 60, r: 65 }
+            { x: 400, y: 250, r: 30 },
+            { x: 700, y: 330, r: 30 },
+            { x: 950, y: HEIGHT / 2, r: 30 }
         ],
-
         obstacles: [
-            { x: 280, y: 100, w: 60, h: 430, moving: true, dy: 3.6, yRange: [100, 470], bidir: true },
-            { x: 520, y: 220, w: 110, h: 110, moving: true, dx: 4.0, xRange: [440, 620], bidir: true },
-            { x: 820, y: 100, w: 60, h: 430, moving: true, dy: -3.6, yRange: [100, 470], bidir: true },
-            //{ x: 1020, y: 260, w: 100, h: 100, moving: true, dx: -4.2, xRange: [940, 1120], bidir: true },
-            { x: 900, y: 300, w: 110, h: 110, moving: true, dx: 4.0, xRange: [440, 620], bidir: true },
+            // Horizontal laser sweeps
+            { x: 320, y: 170, w: 200, h: 30, moving: true, dy: 4, yRange: [140, 380], bidir: true },
+            { x: 320, y: 380, w: 200, h: 30, moving: true, dy: -4, yRange: [140, 380], bidir: true },
 
+            // Vertical laser sweeps
+            { x: 600, y: 150, w: 35, h: 200, moving: true, dx: 3.5, xRange: [560, 740], bidir: true },
+            { x: 740, y: 250, w: 35, h: 200, moving: true, dx: -3.5, xRange: [560, 740], bidir: true },
+
+            // Diagonal cutters
+            { x: 850, y: 180, w: 75, h: 75, moving: true, dx: 3.5, dy: 3.5, xRange: [820, 980], yRange: [160, 360], bidir: true },
+            { x: 980, y: 360, w: 75, h: 75, moving: true, dx: -3.5, dy: -3.5, xRange: [820, 980], yRange: [160, 360], bidir: true },
         ]
     },
     {
         level: 24,
-        name: "Fuel Labyrinth",
+        name: "Plasma Corridor",
         carStart: { x: 130, y: HEIGHT / 2 },
         finishPos: { x: WIDTH - 160, y: HEIGHT / 2 },
-        playSpeed: 135,
-        bgColor: "#f7eaff",
-        gridColor: "rgba(220,160,255,0.12)",
-        pathColor: "#8b00cc",
-        carColor: "#4f0066",
+        playSpeed: 155,
+        bgColor: "#00131a",
+        gridColor: "rgba(0,255,255,0.18)",
+        pathColor: "#00f5ff",
+        carColor: "#00c2cc",
         petrolPump: [
-            { x: 850, y: HEIGHT / 2 + 30, r: 28 }
-            // { x: 840, y: HEIGHT / 3 + 29, r: 28 }
+            { x: 720, y: 350, r: 30 }
         ],
-
         obstacles: [
-            { x: 300, y: 80, w: 70, h: 450, moving: true, dy: 4.0, yRange: [80, 480], bidir: true },
-            { x: 540, y: 260, w: 50, h: 380, moving: true, dy: -3.8, yRange: [140, 420], bidir: true },
-            { x: 780, y: 200, w: 120, h: 120, moving: true, dx: 4.3, xRange: [680, 900], bidir: true },
-            { x: 1040, y: 90, w: 60, h: 460, moving: true, dy: 4.1, yRange: [90, 480], bidir: true },
+            { x: 320, y: 120, w: 220, h: 26, moving: true, dy: 3.5, yRange: [120, 360], bidir: true },
+            { x: 320, y: 400, w: 220, h: 26, moving: true, dy: -3.5, yRange: [120, 360], bidir: true },
+
+            { x: 600, y: 150, w: 32, h: 220, moving: true, dx: 3, xRange: [560, 740], bidir: true },
+            { x: 760, y: 250, w: 32, h: 220, moving: true, dx: -3, xRange: [560, 740], bidir: true },
+
+            { x: 900, y: 200, w: 70, h: 70, moving: true, dx: 3, dy: 3, xRange: [860, 980], yRange: [160, 360], bidir: true },
         ]
     },
     {
         level: 25,
-        name: "Hell Run",
-        carStart: { x: 140, y: HEIGHT / 2 },
+        name: "Electric Maze",
+        carStart: { x: 130, y: HEIGHT / 2 },
         finishPos: { x: WIDTH - 160, y: HEIGHT / 2 },
-        playSpeed: 145,
-        bgColor: "#ffeaea",
-        gridColor: "rgba(255,130,130,0.12)",
-        pathColor: "#cc0000",
-        carColor: "#660000",
+        playSpeed: 160,
+        bgColor: "#0a1628",
+        gridColor: "rgba(56,189,248,0.25)",
+        pathColor: "#38bdf8",
+        carColor: "#0284c7",
         petrolPump: [
-            { x: 720, y: HEIGHT / 2, r: 30 }
+            { x: 480, y: 200, r: 28 },
+            { x: 720, y: 380, r: 28 }
+        ],
+        obstacles: [
+            // Electric barriers - complex maze
+            { x: 300, y: 140, w: 180, h: 35, moving: true, dx: 3.5, xRange: [280, 450], bidir: true },
+            { x: 300, y: 380, w: 180, h: 35, moving: true, dx: -3.5, xRange: [280, 450], bidir: true },
+
+            { x: 550, y: 120, w: 40, h: 180, moving: true, dy: 4, yRange: [120, 320], bidir: true },
+            { x: 650, y: 300, w: 40, h: 180, moving: true, dy: -4, yRange: [180, 380], bidir: true },
+
+            { x: 800, y: 180, w: 85, h: 85, moving: true, dx: 4, dy: 3.5, xRange: [750, 920], yRange: [160, 360], bidir: true },
+            { x: 920, y: 340, w: 85, h: 85, moving: true, dx: -4, dy: -3.5, xRange: [750, 920], yRange: [160, 360], bidir: true },
+        ]
+    },
+    {
+        level: 26,
+        name: "The Blade Runner",
+        carStart: { x: 130, y: HEIGHT / 2 },
+        finishPos: { x: WIDTH - 160, y: HEIGHT / 2 },
+        playSpeed: 132,
+        bgColor: "#1a0033",
+        gridColor: "rgba(168,85,247,0.25)",
+        pathColor: "#a855f7",
+        carColor: "#7e22ce",
+        petrolPump: [
+            { x: 650, y: HEIGHT / 2, r: 30 }
+        ],
+        obstacles: [
+            // Razor-thin vertical blades
+            { x: 320, y: 100, w: 25, h: 400, moving: true, dy: 5.5, yRange: [100, 200], bidir: true },
+            { x: 450, y: 200, w: 25, h: 400, moving: true, dy: -5.5, yRange: [100, 200], bidir: true },
+            { x: 580, y: 100, w: 25, h: 400, moving: true, dy: 6, yRange: [100, 200], bidir: true },
+            { x: 710, y: 200, w: 25, h: 400, moving: true, dy: -6, yRange: [100, 200], bidir: true },
+            { x: 840, y: 100, w: 25, h: 400, moving: true, dy: 5.5, yRange: [100, 200], bidir: true },
+            { x: 970, y: 200, w: 25, h: 400, moving: true, dy: -5.5, yRange: [100, 200], bidir: true },
+        ]
+    },
+    {
+        level: 27,
+        name: "Gravity Trap",
+        carStart: { x: 120, y: HEIGHT - 150 },
+        finishPos: { x: WIDTH - 140, y: 120 },
+        playSpeed: 130,
+        bgColor: "#1e1b4b",
+        gridColor: "rgba(99,102,241,0.25)",
+        pathColor: "#6366f1",
+        carColor: "#4f46e5",
+        petrolPump: [{ x: WIDTH / 2, y: HEIGHT / 2, r: 26 }],
+        obstacles: [
+            { x: 350, y: 120, w: 35, h: 380, zigzag: true },
+            { x: 520, y: 180, w: 35, h: 350, moving: true, dy: 5 },
+            { x: 700, y: 100, w: 70, h: 70, rotating: true, angleSpeed: 0.12 },
+            { x: 860, y: 200, w: 35, h: 300 }
+        ]
+    },
+    {
+        level: 28,
+        name: "Shifting Gap Ritual",
+        carStart: { x: 120, y: HEIGHT / 2 },
+        finishPos: { x: WIDTH - 150, y: HEIGHT / 2 },
+        playSpeed: 148,
+
+        bgColor: "#020617",
+        gridColor: "rgba(14,165,233,0.2)",
+        pathColor: "#0ea5e9",
+        carColor: "#0369a1",
+
+        petrolPump: [
+            // { x: WIDTH / 2, y: HEIGHT / 2 + 140, r: 28 }
+            { x: WIDTH / 2, y: HEIGHT / 5 + 190, r: 28 }
         ],
 
         obstacles: [
-            { x: 320, y: 100, w: 70, h: 450, moving: true, dy: 4.5, yRange: [100, 480], bidir: true },
-            { x: 560, y: 220, w: 120, h: 120, moving: true, dx: -4.5, xRange: [480, 640], bidir: true },
-            { x: 820, y: 100, w: 70, h: 450, moving: true, dy: -4.4, yRange: [100, 480], bidir: true },
-            { x: 1080, y: 280, w: 140, h: 90, moving: true, dx: 4.8, xRange: [980, 1180], bidir: true },
+            // WALL SET 1 (TOP + BOTTOM GAP MOVES)
+            { x: 260, y: 0, w: 40, h: 220, moving: true, dy: 4, yRange: [0, 120] },
+            { x: 260, y: 360, w: 40, h: 240, moving: true, dy: -4, yRange: [300, 420] },
+
+            // WALL SET 2 (FASTER + OFFSET)
+            { x: 360, y: 0, w: 40, h: 240, moving: true, dy: 6, yRange: [0, 140] },
+            { x: 360, y: 380, w: 40, h: 220, moving: true, dy: -6, yRange: [320, 440] },
+
+            // FUEL BAIT ZONE (SAFE LOOK, EXIT HARD)
+            { x: 520, y: 140, w: 40, h: 260 },
+            { x: 620, y: 0, w: 40, h: 240, moving: true, dy: 7 },
+            { x: 620, y: 360, w: 40, h: 240, moving: true, dy: -7 },
+
+            // FINAL PANIC GAP (VERY FAST)
+            { x: 760, y: 0, w: 34, h: 260, moving: true, dy: 9 },
+            { x: 760, y: 340, w: 34, h: 260, moving: true, dy: -9 },
+
+            { x: 860, y: 120, w: 30, h: 360, moving: true, dy: 10 }
         ]
-    },
+    }
+
 
 
 ];
@@ -544,6 +771,30 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
     if (stroke) ctx.stroke();
 }
 
+
+// 19-12//
+function drawFuelBar(ctx, car) {
+
+    const barX = 20;
+    const barY = 20;
+    const barW = 200;
+    const barH = 18;
+
+    ctx.fillStyle = "#333";
+    ctx.fillRect(barX, barY, barW, barH);
+
+    const fuelWidth = (car.fuel / car.maxFuel) * barW;
+    ctx.fillStyle = fuelWidth > 50 ? "#22c55e" : "#ef4444";
+    ctx.fillRect(barX, barY, fuelWidth, barH);
+
+    ctx.strokeStyle = "#000";
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    ctx.fillStyle = "#000";
+    ctx.font = "12px Arial";
+    ctx.fillText("Fuel", barX, barY - 5);
+}
+
 // Finish line નું checkered flag draw કરે છે.
 function drawCheckeredFlag(ctx, cx, cy, size = 44) {
     const squares = 5;
@@ -562,33 +813,31 @@ function drawCheckeredFlag(ctx, cx, cy, size = 44) {
     ctx.restore();
 }
 
+
 export default function DoodleRoadGame() {
     const canvasRef = useRef(null);
     const rafRef = useRef(null);
     const stateRef = useRef({});
     const finishAlertShown = useRef(false);
 
+
     const [mode, setMode] = useState('draw');
     const [score, setScore] = useState(0);
     const [currentLevel, setCurrentLevel] = useState(1);
     const [showNextLevel, setShowNextLevel] = useState(false);
+    const [showLevelComplete, setShowLevelComplete] = useState(false); // 26-12 --banner//
+
     const [gameStarted, setGameStarted] = useState(false);
-    // const [showLevelSelect, setShowLevelSelect] = useState(false);
+
     const [totalStars, setTotalStars] = useState(0);
-    // const [levelStars, setLevelStars] = useState(0);
-    // const [levelCompleted, setLevelCompleted] = useState(false);
+
+    //  const [levelStars, setLevelStars] = useState(0);
 
     const currentConfig = LEVEL_CONFIGS[currentLevel - 1];
-
-
-
-
-
 
     // currentLevel બદલાય ત્યારે ચાલે
     useEffect(() => {
         const config = LEVEL_CONFIGS[currentLevel - 1];
-
         // Replace stateRef.current = { ... } inside the currentLevel effect with this
 
         stateRef.current = {
@@ -602,31 +851,17 @@ export default function DoodleRoadGame() {
                 angle: 0,
                 finished: false,
                 falling: false,
-                vy: 0,
-                visible: true,
 
-                // ⭐ NEW FUEL SYSTEM ⭐
+
+                vy: 0,            // vertical velocity (important)
+                // gravity: 0.2,  
+                visible: true,
+                //19-12 //
                 fuel: 100,
                 maxFuel: 100,
-                fuelDrainRate: 0.06,
+                //fuelDrainRate: 0.03,
+                fuelDrainRate: 0.1,
             },
-            // petrolPump: currentLevel >= 21 ? {
-            //     x: WIDTH / 2,
-            //     y: HEIGHT / 2,
-            //     r: 22,
-            //     used: false
-            // } : null,
-            // petrolPump: {
-            //     x: 420,
-            //     y: 280,
-            //     r: 30,
-            //     used: false
-            // },
-
-            //19-12 //
-            petrolPump: config.petrolPump
-                ? { ...config.petrolPump }
-                : null,
             finish: {
                 x: config.finishPos.x,
                 y: config.finishPos.y,
@@ -641,15 +876,16 @@ export default function DoodleRoadGame() {
             startTime: 0
 
         };
-        // finishAlertShown.current = false;
+
+        finishAlertShown.current = false;
+
         // setScore(0);
-        setMode('draw');
         setShowNextLevel(false);
         setGameStarted(false);
         // setLevelStars(0);
         // setLevelCompleted(false);
-
     }, [currentLevel]);
+
 
     // Create Car Design Show
     function drawCar(ctx, cx, cy, angle = 0) {
@@ -677,8 +913,15 @@ export default function DoodleRoadGame() {
         ctx.fill();
         ctx.stroke();
         ctx.restore();
-
     }
+
+    // // // 19-12//
+    // function checkPetrolPumpCollision(car, pump) {
+    //     const dx = car.x - pump.x;
+    //     const dy = car.y - pump.y;
+    //     return Math.hypot(dx, dy) < pump.r + car.w / 2;
+    // }
+
 
     // Back-Ground Canvas Design Grid View
     function drawGrid(ctx) {
@@ -699,90 +942,8 @@ export default function DoodleRoadGame() {
         }
     }
 
-    // function drawPetrolPump(ctx, pump) {
-    //     ctx.save();
-    //     ctx.fillStyle = "#ff0000";
-    //     ctx.strokeStyle = "#000";
-    //     ctx.lineWidth = 3;
-    //     ctx.beginPath();
-    //     ctx.arc(pump.x, pump.y, pump.r, 0, Math.PI * 2);
-    //     ctx.fill();
-    //     ctx.stroke();
 
-    //     // pump icon tube
-    //     ctx.fillStyle = "white";
-    //     ctx.font = "18px Arial";
-    //     ctx.textAlign = "center";
-    //     ctx.fillText("⛽", pump.x, pump.y + 6);
-    //     ctx.restore();
-    // }
-
-
-    // function drawPetrolPump(ctx, pump) {
-    //     ctx.save();
-    //     ctx.translate(pump.x, pump.y);
-
-    //     // ===== Main body =====
-    //     ctx.fillStyle = "#e10600";  // Red pump
-    //     ctx.strokeStyle = "#000";
-    //     ctx.lineWidth = 1.5;
-    //     ctx.fillRect(-12, -18, 24, 36);
-    //     ctx.strokeRect(-12, -18, 24, 36);
-
-    //     // ===== Top cap =====
-    //     ctx.fillStyle = "#ffffff";
-    //     ctx.fillRect(-12, -22, 24, 4);
-    //     ctx.strokeRect(-12, -22, 24, 4);
-
-    //     // ===== Nozzle =====
-    //     ctx.strokeStyle = "#000";
-    //     ctx.lineWidth = 1.5;
-    //     ctx.beginPath();
-    //     ctx.moveTo(12, -5);
-    //     ctx.lineTo(18, -9);
-    //     ctx.lineTo(18, -3);
-    //     ctx.stroke();
-
-    //     // const fuelImg = new Image();
-    //     // fuelImg.src = '../assets/fuel.png';
-    //     // // ===== Tiny ⛽ Icon =====
-    //     // ctx.font = "7px Arial";
-    //     // ctx.fillStyle = "#fff";
-    //     // ctx.textAlign = "center";
-    //     // ctx.textBaseline = "middle";
-    //     // // ctx.fillText("⛽", 0, 2);
-    //     // ctx.drawImage(fuelImg, x - width / 2, y - height / 2, width, height);
-
-    //     ctx.textAlign = "center";
-    //     ctx.textBaseline = "middle";
-
-    //     // If you had a font and fillStyle for text, you can keep it (not strictly needed for image)
-    //     ctx.font = "7px Arial";
-    //     ctx.fillStyle = "#fff";
-
-    //     // ===== Load and draw fuel image =====
-    //     const fuelImg = new Image();
-    //     fuelImg.src = fuelIcon;
-
-    //     fuelImg.onload = function () {
-    //         const x = 0; // position where you want the fuel icon
-    //         const y = 2; // position where you want the fuel icon
-    //         const width = 14; // adjust width
-    //         const height = 14; // adjust height
-
-    //         // Draw the image centered at (x, y)
-    //         ctx.drawImage(fuelImg, x - width / 2, y - height / 2, width, height);
-    //     };
-    //     ctx.restore();
-    // }
-
-    // ===== Preload fuel image once =====
-
-    //new code add this //
-
-    // const fuelImg = new Image();
-    // fuelImg.src = fuelIcon;
-
+    // 19-12//
     // function drawPetrolPump(ctx, pump) {
     //     ctx.save();
     //     ctx.translate(pump.x, pump.y);
@@ -798,71 +959,102 @@ export default function DoodleRoadGame() {
     // }
 
 
+    // 19-12//
+    // ⛽ PETROL PUMP DRAW FUNCTION — ⭐ અહીં ADD કર ⭐
+    // function drawPetrolPump(ctx, pump) {
+    //     if (!pump) return;
+    //     ctx.save();
+
+    //     ctx.drawImage(
+    //         fuelImg,
+    //         pump.x - pump.r,
+    //         pump.y - pump.r,
+    //         pump.r * 1,
+    //         pump.r * 1,
+    //     );
+    //     ctx.restore();
+    // }
 
 
-    // ===== Draw petrol pump function =====
+    // // 06-01 --petrolbug//
     function drawPetrolPump(ctx, pump) {
+        if (!pump || pump.used) return;   // ⭐ MAIN FIX
 
         ctx.save();
-        ctx.translate(pump.x, pump.y);
-        // ===== Draw the preloaded fuel image =====
-        const width = 25;   // same size as old rectangle
-        const height = 37;  // same size as old rectangle
-
-        // Only draw if image is loaded
-        if (fuelImg.complete) {
-            ctx.drawImage(fuelImg, -width / 2, -height / 2, width, height);
-        }
-
+        ctx.drawImage(
+            fuelImg,
+            pump.x - pump.r,
+            pump.y - pump.r,
+            pump.r * 1,
+            pump.r * 1,
+        );
         ctx.restore();
     }
 
 
 
+    // function drawPetrolPump(ctx) {
+    //     activePetrolPumps.forEach(pump => {
+    //         ctx.drawImage(
+    //             fuelImg,
+    //             pump.x - pump.r,
+    //             pump.y - pump.r,
+    //             pump.r * 1,
+    //             pump.r * 1,
+    //         );
+    //     });
+    // }
+
+    // // // 19-12//
+    // function checkPetrolPumpCollision(car, pump) {
+    //     const dx = car.x - pump.x;
+    //     const dy = car.y - pump.y;
+    //     return Math.hypot(dx, dy) < pump.r + car.w / 2;
+    // }
+
     // Line Draw For Canvas
     useEffect(() => {
-        const canvas = canvasRef.current;
 
-        // 18-12-2025//
-        setTimeout(() => {
-            startGame();
-        }, 100);
+        const canvas = canvasRef.current;
         if (!canvas) return;
 
         // prevent the browser from handling touch gestures (so touchmove works well)
         canvas.style.touchAction = 'none';
 
         const getRect = () => canvas.getBoundingClientRect();
+
         const toLocal = (e) => {
             const r = getRect();
-            // support both touch and mouse events
-            if (e.touches && e.touches[0]) e = e.touches[0];
-            // some pointer events use clientX/clientY as well
+            let cx, cy;
+
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                cx = e.changedTouches[0].clientX;
+                cy = e.changedTouches[0].clientY;
+            } else if (e.touches && e.touches.length > 0) {
+                cx = e.touches[0].clientX;
+                cy = e.touches[0].clientY;
+            } else {
+                cx = e.clientX;
+                cy = e.clientY;
+            }
+
             return {
-                x: (e.clientX - r.left) * (WIDTH / r.width),
-                y: (e.clientY - r.top) * (HEIGHT / r.height)
+                x: (cx - r.left) * (WIDTH / r.width),
+                y: (cy - r.top) * (HEIGHT / r.height)
             };
-        };
+        }
 
+        // 22-12//
         const s = stateRef.current;
+        const config = LEVEL_CONFIGS[currentLevel - 1];
+        s.config = config;
+        stateRef.current.config = config; // 19-12//
 
-        // function down(e) {
-        //     if (mode !== 'draw' || s.playing) return;
-        //     e.preventDefault();
-        //     s.isDrawing = true;
-        //     const p = toLocal(e);
-
-        //     // start a new stroke (break:true marks a new sub-stroke)
-        //     s.path.push({
-        //         x: p.x,
-        //         y: p.y,
-        //         break: true
-        //     });
-        // }
 
         function down(e) {
             if (mode !== 'draw' || s.playing) return;
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
+
             s.isDrawing = true;
             const p = toLocal(e);
 
@@ -877,19 +1069,20 @@ export default function DoodleRoadGame() {
 
         function move(e) {
             if (!s.isDrawing || mode !== 'draw' || s.playing) return;
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
+
             const p = toLocal(e);
+
             const last = s.path[s.path.length - 1];
 
-            if (!last || dist(last, p) > 6) {
+            // Reduced threshold from 6 to 3 for better responsivenes
+            if (!last || dist(last, p) > 3) {
                 s.path.push({ x: p.x, y: p.y });
             }
         }
 
         function up() {
-            if (s.isDrawing) {
-                s.isDrawing = false;
-            }
+            s.isDrawing = false;
         }
 
         // ensure state arrays exist
@@ -906,11 +1099,6 @@ export default function DoodleRoadGame() {
         window.addEventListener('touchmove', move, { passive: false });
         window.addEventListener('touchend', up);
 
-        // Optional: pointer events (modern browsers) — keep as fallback, don't duplicate handlers
-        // canvas.addEventListener('pointerdown', down);
-        // window.addEventListener('pointermove', move);
-        // window.addEventListener('pointerup', up);
-
         return () => {
             // cleanup all we added
             canvas.removeEventListener('mousedown', down);
@@ -920,11 +1108,6 @@ export default function DoodleRoadGame() {
             canvas.removeEventListener('touchstart', down);
             window.removeEventListener('touchmove', move);
             window.removeEventListener('touchend', up);
-
-            // if you uncommented pointer handlers, remove them here too
-            // canvas.removeEventListener('pointerdown', down);
-            // window.removeEventListener('pointermove', move);
-            // window.removeEventListener('pointerup', up);
         };
     }, [mode]);
 
@@ -954,15 +1137,15 @@ export default function DoodleRoadGame() {
 
     // ----------------- START PLAY (updated) -----------------
     const startPlay = useCallback(() => {
-        // new code add //
-
-        const config = LEVEL_CONFIGS[currentLevel - 1];
         const s = stateRef.current;
-        s.playing = true;        // 🚗 START MOVE
-        s.gameOver = false;
-        s.playProgress = 0;      // 🔁 RESET PATH
-        s.car.finished = false;
+        const config = LEVEL_CONFIGS[currentLevel - 1];
 
+
+        // stateRef.current.config = config;
+
+        // 🔑 THIS IS THE KEY LINE
+        // s.config = config;
+        //      stateRef.current.config = config; // 19-12//
 
         // --- reset physics / states ---
         s.playSpeed = typeof config.playSpeed === 'number' ? config.playSpeed : (s.playSpeed || 120);
@@ -979,7 +1162,7 @@ export default function DoodleRoadGame() {
         // if path too short → just fall
         if (s.path.length < 1) {
             console.log('startPlay: path too short -> falling', { pathLen: s.path.length });
-            s.playing = true;
+            s.playing = false;
             s.playProgress = 0;
             s.car.falling = true;
             s.car.vy = 0;
@@ -1007,7 +1190,7 @@ export default function DoodleRoadGame() {
 
             s.car.falling = false;
             s.car.vy = 0;
-            s.playing = false;
+            s.playing = true;
             s.playProgress = 0;
             s.car.finished = false;
 
@@ -1055,7 +1238,7 @@ export default function DoodleRoadGame() {
 
                 s.car.falling = false;
                 s.car.vy = 0;
-                s.playing = false;
+                s.playing = true;
                 s.car.finished = false;
 
                 console.log('startPlay: attached at bestIdx', { bestIdx, playProgress: s.playProgress, car: { x: s.car.x, y: s.car.y } });
@@ -1326,7 +1509,6 @@ export default function DoodleRoadGame() {
 
     function followPath(progress, path, groundY = Infinity) {
         if (!Array.isArray(path) || !path.length < 0) return null;
-        //if (!Array.isArray(path) || path.length < 2) return null;
 
         // ---- tunables ----
         const JOIN_EPS = 2;
@@ -1631,8 +1813,6 @@ export default function DoodleRoadGame() {
         return path[path.length - 1];
     }
 
-
-
     function aabb(a, b) {
         return !(
             a.x + a.w < b.x ||
@@ -1643,65 +1823,84 @@ export default function DoodleRoadGame() {
     }
 
     // Replace your updateCar with this version (call from loop as updateCar(s, dt, HEIGHT - 20))
-
-
-
     function updateCar(s, dt, groundY = Infinity) {
-        if (!s.playing) return;
-        if (s.car.finished) return;
+
+
+        // 🎉 FINISH CONFETTI UPDATE (ALWAYS RUNS) // 24-12 -- animation//
+        if (finishAnimActive) {
+            finishTimer += dt;
+
+            // move particles
+            finishConfetti = finishConfetti.filter(p => p.life > 0);
+            finishConfetti.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                p.vy += 0.15;
+                p.vx *= 0.99;
+                p.life--;
+            });
+
+            // 26-12 --winner//
+            // 🏆 WINNER TEXT animation
+            if (winnerScale < 1) winnerScale += 0.035;
+            if (winnerGlow < 35) winnerGlow += 1.2;
+
+            // 🌑 DARK PHASE after first animation
+            if (finishTimer > 1.6) finishPhase = 1;
+
+            if (finishPhase === 1 && finishOverlayAlpha < 0.55) {
+                finishOverlayAlpha += 0.01;
+                winnerAlpha -= 0.003;
+            }
+
+            // 🛑 END animation
+            if (finishTimer > 3) {
+                finishAnimActive = false;
+                showNextBanner = true;
+                finishConfetti = [];
+                finishOverlayAlpha = 0;
+                winnerScale = 0;
+                winnerAlpha = 1;
+                winnerGlow = 0;
+                winnerPulse = 0;
+
+            } // wineer//
+
+
+
+            // 🔥 after 1.2 sec → DARK PHASE
+            if (finishTimer > 1.2) {
+                finishPhase = 1;
+            }
+
+            // dark fade in slowly
+            if (finishPhase === 1 && finishOverlayAlpha < 0.45) {
+                finishOverlayAlpha += 0.008;
+            }
+
+            // 🔁 CONTINUOUS SOFT BURSTS (EVERY ~2s)
+            if (finishHold && Math.floor(finishTimer * 10) % 18 === 0) {
+                spawnFinishBlast(WIDTH, HEIGHT);
+            }
+
+
+            // end animation after ~5 sec
+            if (finishTimer > 5) {
+                finishAnimActive = false;
+                finishConfetti = [];
+                finishOverlayAlpha = 0;
+            }
+
+        }
 
         if (!s.playing || s.car.finished) return;
-        // 18-12-2025
-        if (s.car.finished) {
-            s.car.vx = 0;
-            s.car.vy = 0;
-            s.car.falling = false;
-            return;
-        }
-
-        const ENGINE_SPEED = 120;
-        s.car.vx = ENGINE_SPEED;
-        // 18-12-2025 //
-        // 🏁 FINISH CHECK
-        const fx = s.finish.x;
-        const fy = s.finish.y;
-        const fw = s.finish.w;
-        const fh = s.finish.h;
-
-        // car center
-        const carCX = s.car.x + s.car.w / 2;
-        const carCY = s.car.y + s.car.h / 2;
-
-        // check if car is INSIDE finish box
-        const insideFinish =
-            carCX > fx &&
-            carCX < fx + fw &&
-            carCY > fy &&
-            carCY < fy + fh;
-
-        if (insideFinish && !s.car.finished) {
-            s.car.finished = true;
-            s.playing = false;
-            s.car.visible = false;
-
-            setShowNextLevel(true);
-            setGameStarted(false);
-
-            // // ✅ SNAP CAR INSIDE FINISH (CENTER)
-            // s.car.x = fx + fw / 2 - s.car.w / 2;
-            // s.car.y = fy + fh / 2 - s.car.h / 2;
-
-            // optional: hide car
-
-        }
-
-
-
 
         // --------------------------------------------
         // 1) If already in falling mode -> integrate physics (dt)
         // --------------------------------------------
-        if (s.car.falling) {
+        //if (s.car.falling)
+        if (s.car.falling && !s.car.finished) { // 23-12//
             const AIR_GRAVITY = (typeof s.car.gravity === 'number') ? s.car.gravity : 1200; // px/s^2
             // integrate velocities with dt (framerate independent)
             s.car.vy += AIR_GRAVITY * dt;
@@ -1719,7 +1918,6 @@ export default function DoodleRoadGame() {
                 s.car.falling = false;
                 s.car.finished = true;
             }
-
             return;
         }
 
@@ -1814,61 +2012,9 @@ export default function DoodleRoadGame() {
     }
 
 
-    // function checkFuelImageCollision(car, pump) {
-    //     const dx = car.x - pump.x;
-    //     const dy = car.y - pump.y;
-    //     const distance = Math.sqrt(dx * dx + dy * dy);
-
-    //     return distance < (pump.r || 22);
-    // }
-
-    // function checkFuelImageCollision(car, pump) {
-    //     const fuelWidth = 25;
-    //     const fuelHeight = 37;
-
-    //     const left = pump.x - fuelWidth / 2;
-    //     const right = pump.x + fuelWidth / 2;
-    //     const top = pump.y - fuelHeight / 2;
-    //     const bottom = pump.y + fuelHeight / 2;
-
-    //     return (
-    //         car.x > left &&
-    //         car.x < right &&
-    //         car.y > top &&
-    //         car.y < bottom
-    //     );
-    // }
-
-    // new code add this //
-    function checkFuelImageCollision(car, pump) {
-        // fuel image size (same as draw)
-        const fuelW = 25;
-        const fuelH = 37;
-
-        // car size (adjust if needed)
-        const carRadius = 14;
-
-        // fuel rectangle
-        const rx = pump.x - fuelW / 2;
-        const ry = pump.y - fuelH / 2;
-        const rw = fuelW;
-        const rh = fuelH;
-
-        // closest point from circle to rectangle
-        const closestX = Math.max(rx, Math.min(car.x, rx + rw));
-        const closestY = Math.max(ry, Math.min(car.y, ry + rh));
-
-        const dx = car.x - closestX;
-        const dy = car.y - closestY;
-
-        return (dx * dx + dy * dy) <= carRadius * carRadius;
-    }
-
-
-
-
     function loop(ts) {
         const s = stateRef.current;
+
 
         // Time delta
         if (!s.lastTime) s.lastTime = ts;
@@ -1881,6 +2027,78 @@ export default function DoodleRoadGame() {
 
         // constants
         updateCar(s, dt);
+
+        // 23-12//
+        drawCar(ctx, s.car.x, s.car.y, s.car.angle);
+
+
+        // 22-12-2015// ==//23-12//
+        const FINISH_RADIUS = 25;
+        const FINISH_EXIT_DISTANCE = 80; // 🔥 line બહાર કેટલું જવું
+
+        if (!s.car.finished) {
+            const dx = s.car.x - s.finish.x;
+            const dy = s.car.y - s.finish.y;
+
+            if (Math.hypot(dx, dy) <= FINISH_RADIUS) {
+
+                // ✅ Mark finish
+                s.car.finished = true;
+                s.playing = false;
+
+                // ➡️ Move car forward in its current direction
+                const angle = s.car.angle || 0;
+
+                s.car.x = s.finish.x + Math.cos(angle) * FINISH_EXIT_DISTANCE;
+                s.car.y = s.finish.y + Math.sin(angle) * FINISH_EXIT_DISTANCE;
+
+                // 🛑 Stop all movement
+                s.car.vy = 0;
+                s.car.vy = 0;
+                s.car.falling = false;
+
+
+                // 👁️ Always visible
+                s.car.visible = true;
+                setShowNextLevel(true);
+            }
+        }
+
+        // 19-12//
+        if (Array.isArray(currentConfig.petrolPump)) {
+
+            currentConfig.petrolPump.forEach(pump => {
+                if (!pump.used && checkPetrolPumpCollision(s.car, pump)) {
+                    pump.used = true;
+                    s.car.fuel = s.car.maxFuel;
+                }
+            });
+        }
+
+
+        // 20-12//
+        // ⛽ DRAW PETROL PUMP (ADD HERE)
+        if (Array.isArray(currentConfig.petrolPump)) {
+            currentConfig.petrolPump.forEach(pump => {
+                if (!pump.used) {
+                    drawPetrolPump(ctx, pump);
+                }
+            });
+        }
+
+
+
+        // 19-12//
+        const pump = currentConfig.petrolPump;
+
+        if (pump && !pump.used) {
+            if (checkPetrolPumpCollision(s.car, pump)) {
+                pump.used = true;
+                s.car.fuel = s.car.maxFuel; // FULL REFILL
+            }
+        }
+
+
 
 
         const obstacles = currentConfig?.obstacles ?? [];
@@ -1897,84 +2115,19 @@ export default function DoodleRoadGame() {
 
         // --- path-following & play progress ---
         if (s.playing && !s.car.finished && !s.gameOver) {
+            s.playProgress += s.playSpeed * dt;
+            // 19-12//
+            // ⛽ FUEL DRAIN (LEVEL 21+)
+            // ⛽ Fuel Drain
+            if (s.playing && s.petrolPump && !s.car.finished) {
+                s.car.fuel -= s.car.fuelDrainRate * dt * 60;
 
-
-            if (s.playing && !s.car.finished && !s.gameOver) {
-                s.playProgress += s.playSpeed * dt;
-                const pos = followPath(s.playProgress, s.path, HEIGHT - 20);
-                if (pos) {
-                    s.car.x = pos.x;
-                    s.car.y = pos.y;
-                    s.car.angle = pos.angle;
+                if (s.car.fuel <= 0) {
+                    s.car.fuel = 0;
+                    s.playing = false;
+                    s.car.falling = true; // fuel khatam = game over
                 }
             }
-
-            const config = LEVEL_CONFIGS[currentLevel - 21];
-
-
-
-            // s.car.fuel -= s.car.fuelDrainRate;
-
-            // if (s.car.fuel <= 0) {
-            //     s.car.fuel = 0;
-            //     s.gameOver = true;
-            //     console.log("Out of fuel!");
-            //     return;   // IMPORTANT: stop game loop
-            // }
-
-            //         if (isFuelLevel) {
-            //     s.car.fuel -= s.car.fuelDrainRate;
-
-            //     if (s.car.fuel <= 0) {
-            //         s.car.fuel = 0;
-            //         s.gameOver = true;
-            //         console.log("Out of fuel!");
-            //     }
-            // }
-
-            /// old code //
-
-            // if (isFuelLevel && s.playing && !s.car.finished) {
-            //     s.car.fuel -= s.car.fuelDrainRate * dt * 60;
-
-            //     if (s.car.fuel <= 0) {
-            //         s.car.fuel = 0;
-            //         s.playing = false;
-            //         s.car.falling = true;
-            //     }
-            // }
-
-
-            // new code add //
-            // ⭐ FUEL DRAIN SYSTEM ⭐
-
-            if (!s.car.justRefueled) {
-                s.car.fuel -= s.car.fuelDrainRate * dt * 60;
-            }
-
-            if (s.car.fuel <= 0) {
-                s.car.fuel = 0;
-                s.gameOver = true;
-                console.log("Out of fuel!");
-                return;
-            }
-
-
-            // if (s.petrolPump && !s.petrolPump.used) {
-            //     const dx = s.car.x - s.petrolPump.x;
-            //     const dy = s.car.y - s.petrolPump.y;
-            //     const dist = Math.hypot(dx, dy);
-
-            //     if (dist < s.petrolPump.r + s.car.w / 2) {
-            //         s.car.fuel = s.car.maxFuel;   // 🔥 FULL FUEL
-            //         s.petrolPump.used = true;     // one time only
-            //     }
-            // }
-
-
-            s.playProgress += s.playSpeed * dt;
-
-
             // pass canvas ground (adjust -20 if you want the ground a little higher)
             let pos = null;
             try {
@@ -1983,6 +2136,67 @@ export default function DoodleRoadGame() {
                 console.log(e.message);
                 pos = null;
             }
+
+            // 19 -12 //
+            // 🚗 update car position
+            if (pos) {
+                s.car.x = pos.x;
+                s.car.y = pos.y;
+                s.car.angle = pos.angle;
+                s.car.falling = pos.falling;
+
+                //20-12//
+                // ⭐ falling ONLY when fuel is empty
+                // if (s.car.fuel <= 0) {
+                //     s.car.falling = true;
+                // }
+                s.car.finished = pos.finished;
+            }
+            // 19-12//
+            // // ⛽ ✅ PETROL PUMP COLLISION — EXACT HERE
+            const config = s.config;
+            if (config && config.petrolPump) {
+                const pumps = Array.isArray(config.petrolPump)
+                    ? config.petrolPump
+                    : [config.petrolPump];
+
+                for (let i = 0; i < pumps.length; i++) {
+                    const pump = pumps[i];
+                    if (
+                        pump &&
+                        !pump.used &&
+                        checkPetrolPumpCollision(s.car, pump)
+                    ) {
+                        pump.used = true;
+                        s.car.fuel = s.car.maxFuel; // 🔥 refill
+                    }
+                }
+            }
+
+
+
+            // ⛽ FUEL DRAIN — ⭐ YAHI ADD KARO ⭐
+            if (s.playing && !s.car.finished && !s.car.falling) {
+                s.car.fuel -= s.car.fuelDrainRate * dt * 60; // smooth drain
+
+                if (s.car.fuel <= 0) {
+                    s.car.fuel = 0;
+                    s.playing = false;
+                    s.car.falling = true; // fuel khatam = car band
+                }
+            }
+
+            //20-12 //
+            // if (s.playing && !s.car.finished && !s.car.falling) {
+            //     s.car.fuel -= s.car.fuelDrainRate;
+
+            //     if (s.car.fuel < 0) s.car.fuel = 0;
+
+            //     if (s.car.fuel === 0) {
+            //         s.playing = false;
+            //         s.car.falling = true;
+            //     }
+            // }
 
             // fallback: walk along polyline by distance (unchanged)
             if (!pos && s.path.length >= 0) {
@@ -2048,154 +2262,32 @@ export default function DoodleRoadGame() {
                 s.car.vy = (typeof s.car.vy === 'number') ? s.car.vy : 0;
                 s.car.visible = true;
             }
-            // ⭐ Petrol Pump Collision Check ⭐
 
-            /// new code add //
-            const isFuelLevel = currentLevel >= 21;
-            if (
-                currentLevel >= 21 &&
-                s.playing &&
-                !s.car.finished &&
-                !s.gameOver
-            ) {
-                if (!s.car.justRefueled) {
-                    s.car.fuel -= s.car.fuelDrainRate * dt * 60;
-                }
+            //19-12//
+            // ⛽ PETROL PUMP TOUCH CHECK (Level 21+)
+            if (s.petrolPump && !s.petrolPump.used && s.car.visible) {
 
-                if (s.car.fuel <= 0) {
-                    s.car.fuel = 0;
-                    s.gameOver = true;
-                    return; // ✅ ONLY here return allowed
-                }
-            }
+                const pumpRect = {
+                    x: s.petrolPump.x - s.petrolPump.w / 2,
+                    y: s.petrolPump.y - s.petrolPump.h / 2,
+                    w: s.petrolPump.w,
+                    h: s.petrolPump.h
+                };
 
-            // new code add //
-            // if (currentLevel >= 21 && s.petrolPump && !s.petrolPump.used) {
-            //     drawPetrolPump(ctx, s.petrolPump);
-            // }
+                const carRect = {
+                    x: s.car.x - s.car.w / 2,
+                    y: s.car.y - s.car.h / 2,
+                    w: s.car.w,
+                    h: s.car.h
+                };
 
-
-
-
-
-
-            // if (isFuelLevel) {
-            //     s.car.maxFuel = 100;
-            //     s.car.fuel = 100;          // 🔥 MUST be full
-            //     s.car.fuelDrainRate = 0.06;
-            //     s.car.justRefueled = false;
-            // } else {
-            //     // levels 1–20
-            //     s.car.fuel = 100;          // safe default
-            // }
-
-
-
-
-            // old code //
-
-            // if (isFuelLevel) {
-            //     s.car.maxFuel = 100;
-            //     s.car.fuel = 100;
-            //     s.car.fuelDrainRate = 0.15;
-            // } else {
-            //     s.car.maxFuel = Infinity;
-            //     s.car.fuel = Infinity;
-            //     s.car.fuelDrainRate = 0;
-            //     s.car.justRefueled = false;
-            // }
-
-            // new code add this //
-            if (isFuelLevel && currentConfig.petrolPump) {
-                for (const pump of currentConfig.petrolPump) {
-                    if (!pump.used && checkPetrolPumpCollision(s.car, pump)) {
-                        pump.used = true;
-
-                        // FULL REFILL
-                        //s.car.fuel = s.car.maxFuel;
-
-                        console.log(" Fuel Refilled!");
-                    }
+                if (aabb(carRect, pumpRect)) {
+                    s.car.fuel = s.car.maxFuel;   // 🟢 GREEN LINE FULL
+                    s.petrolPump.used = true;
                 }
             }
-
-
-
-            // if (isFuelLevel && currentConfig.petrolPumps) {
-            //     for (const pump of currentConfig.petrolPumps) {
-
-            //         if (!pump.used && checkFuelImageCollision(s.car, pump)) {
-
-            //             // 🔥 FUEL FULL
-            //             s.car.fuel = s.car.maxFuel;
-
-            //             // stop drain for this frame
-            //             s.car.justRefueled = true;
-
-            //             // allow only one refill
-            //             pump.used = true;
-
-            //             console.log("Car touched fuel image → Fuel FULL");
-            //         }
-            //     }
-            // }
-
-
-            // if (isFuelLevel && currentConfig.petrolPumps) {
-            //     for (const pump of currentConfig.petrolPumps) {
-            //         if (checkPetrolPumpCollision(s.car, pump)) {
-            //             s.car.fuel = s.car.maxFuel;
-            //             console.log("Refueled!");
-            //         }
-            //     }
-            // }
-
-
-            // if (s.petrolPump && !s.petrolPump.used) {
-            //     if (checkPetrolPumpCollision(s.car, s.petrolPump)) {
-            //         s.car.fuel = s.car.maxFuel;
-            //         s.petrolPump.used = true;
-            //     }
-            // }
-
-
-
-            // if (currentConfig.petrolPumps) {
-            //     for (const pump of currentConfig.petrolPumps) {
-            //         if (checkPetrolPumpCollision(s.car, pump) && !pump.used) {
-
-            //             // fuel refill
-            //             s.car.fuel = s.car.maxFuel;
-            //             pump.used = true;
-
-            //             // 🔥 IMPORTANT: force path continuation
-            //             if (s.path && s.path.length > 0) {
-            //                 const last = s.path[s.path.length - 1];
-
-            //                 // add a join point at pump position (NO break)
-            //                 s.path.push({
-            //                     x: pump.x,
-            //                     y: pump.y
-            //                 });
-
-            //                 // add small forward point so line continues smoothly
-            //                 s.path.push({
-            //                     x: pump.x + 1,
-            //                     y: pump.y + 1
-            //                 });
-            //             }
-
-            //             console.log("Refueled + Path continued");
-            //         }
-            //     }
-            // }
-
-
-
 
             // If we just transitioned from on-path -> falling, give a throw impulse.
-
-
             if (!wasFalling && s.car.falling && !s.car.finished) {
                 let segAngle = Math.PI / 2; // default vertical
                 if ((s.path || []).length >= 2) {
@@ -2230,6 +2322,7 @@ export default function DoodleRoadGame() {
             const carRectForFinish = { x: s.car.x - s.car.w / 2, y: s.car.y - s.car.h / 2, w: s.car.w, h: s.car.h };
             if (aabb(carRectForFinish, fRect) && !finishAlertShown.current) {
                 finishAlertShown.current = true;
+
                 const completionTime = (Date.now() - s.startTime) / 1000;
                 const pathLength = (s.path || []).reduce((total, point, i, arr) => {
                     if (i === 0) return 0;
@@ -2240,14 +2333,37 @@ export default function DoodleRoadGame() {
                 if (completionTime < 5 && efficiency > 0.8);
                 else if (completionTime < 8 && efficiency > 0.6);
                 setTotalStars(prev => prev + 1);
-                setTimeout(() => setShowNextLevel(true), 100);
+
+                // 🎉 BLAST CONFETTI  // 24-12 -- animation //
+                finishConfetti = [];
+                finishAnimActive = true;
+                finishOverlayAlpha = 0;
+                finishPhase = 0;
+                finishTimer = 0;
+                finishHold = true;
+                //burstCooldown = 0;
+
+                // 26-12 --winner//
+                // 🏆 text reset
+                winnerScale = 0;
+                winnerAlpha = 1;
+                winnerGlow = 0;
+                winnerPulse = 0;
+                showNextBanner = true;
+
+                // 🔥 1st blast immediately
+                spawnFinishBlast(WIDTH, HEIGHT);
+
+                setTimeout(() => setShowNextLevel(false), 400);
+                setTimeout(() => spawnFinishBlast(WIDTH, HEIGHT), 800);
+                setTimeout(() => setShowLevelComplete(true), 1400); // 26-12 --banner//
+                //setTimeout(() => setShowNextLevel(true), 100);
 
                 // stop playing when reached finish
-                // s.playing = false;
-                // s.playSpeed = 0;
-                // s.car.finished = true;
-                // s.car.falling = false;
-
+                s.playing = false;
+                s.playSpeed = 0;
+                s.car.finished = true;
+                s.car.falling = false;
             }
 
             // If car is marked finished stop updating play status:
@@ -2337,22 +2453,24 @@ export default function DoodleRoadGame() {
             }
         } else {
             // when not falling, keep visible only if not finished-on-ground
+            // if (s.car.finished) {
+            //     // finished landing on ground -> hide if you prefer
+            //     s.car.visible = false;
+            // } else {
+            //     // normal on-path state -> ensure visible
+            //     s.car.visible = true;
+            // }
+
+            // 22-12-2025//
             if (s.car.finished) {
-                // finished landing on ground -> hide if you prefer
-                s.car.visible = false;
+                s.car.visible = true;   // 👁️ finish પર car દેખાશે
             } else {
-                // normal on-path state -> ensure visible
                 s.car.visible = true;
             }
         }
 
         // DRAW step: draw only when visible
-        // if (s.car.visible && s.car.y < HEIGHT + 200) {
-        //     drawCar(ctx, s.car.x, s.car.y, s.car.angle);
-        // }
-
-        // 18-12-2025 //
-        if (s.car.visible) {
+        if (s.car.visible && s.car.y < HEIGHT + 200) {
             drawCar(ctx, s.car.x, s.car.y, s.car.angle);
         }
 
@@ -2443,20 +2561,43 @@ export default function DoodleRoadGame() {
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
         drawGrid(ctx);
+
+        //19-12//
+        // 🚗 DRAW PETROL PUMP (Level 21+)
+        if (s.petrolPump && !s.petrolPump.used) {
+            drawPetrolPump(ctx, s.petrolPump);
+        }
+
+        // ⛽ DRAW FUEL BAR (Level 21+)
+        if (s.petrolPump) {
+            drawFuelBar(ctx, s.car);
+        }
+
         drawObstacles(ctx, obstacles);
 
-        if (currentConfig.petrolPump) {
-            for (const pump of currentConfig.petrolPump) {
-                if (isFuelLevel) {
+
+
+        // 19-12//
+        // ⛽ PETROL PUMP CALL — ⭐ અહીં ⭐
+        const config = s.config || {};
+        if (config?.petrolPump) {
+            const pumps = Array.isArray(config.petrolPump)
+                ? config.petrolPump
+                : [config.petrolPump];
+
+            pumps.forEach(pump => {
+                if (!pump.used) {        // 👈 only hide AFTER touch
                     drawPetrolPump(ctx, pump);
                 }
-                // drawPetrolPump(ctx, pump);
-            }
+            });
         }
 
 
+        //stateRef.current.config = config;
 
+        // Draw the path (line) first
         if (s.path && s.path.length > 0) {
+
             ctx.shadowColor = 'rgba(0,0,0,0.2)';
             ctx.shadowBlur = 4;
             ctx.lineWidth = 5;
@@ -2473,51 +2614,131 @@ export default function DoodleRoadGame() {
             ctx.stroke();
             ctx.shadowColor = 'transparent';
             ctx.shadowBlur = 0;
+
+
         }
 
+        // Draw finish flag
         const finish = s.finish || { x: 0, y: 0, w: 0 };
         drawCheckeredFlag(ctx, finish.x, finish.y, finish.w);
+
         // if (s.car.y < HEIGHT + 200) drawCar(ctx, s.car.x, s.car.y, s.car.angle);
         // only draw if visible flag is true and car isn't extremely far below
-        if (s.car.visible !== false && s.car.y < HEIGHT + 100) {
+        // if (s.car.visible !== false && s.car.y < HEIGHT + 100) {
+        //     drawCar(ctx, s.car.x, s.car.y, s.car.angle);
+        // }
+        //20-12//
+        if (s.car.visible !== false) {
             drawCar(ctx, s.car.x, s.car.y, s.car.angle);
         }
 
 
+        // 19-12//
+        // ⛽ FUEL BAR CALL — ⭐ અહી ADD કર ⭐
+        if (s.car && typeof s.car.fuel === "number") {
+            drawFuelBar(ctx, s.car);
+        }
+
+        // 19 - 12 //
+        if (s.petrolPump && !s.petrolPump.used) {
+            if (checkPetrolPumpCollision(s.car, s.petrolPump)) {
+                s.car.fuel = s.car.maxFuel;
+                s.petrolPump.used = true;
+                s.car.justRefueled = true;
+            }
+        }
+
+        // function checkPetrolPumpCollision(car, pump) {
+        //     const dx = car.x - pump.x;
+        //     const dy = car.y - pump.y;
+        //     return Math.hypot(dx, dy) < pump.r + car.w / 2;
+        // }
         if (s.car.justRefueled) {
             s.car.justRefueled = false;
         }
 
-        function drawFuelBar(ctx, car) {
-            const x = 20, y = 20, w = 200, h = 20;
-
-            ctx.strokeStyle = "#000";
-            ctx.strokeRect(x, y, w, h);
-
-            const fuelWidth = (car.fuel / car.maxFuel) * w;
-            ctx.fillStyle = car.fuel < 20 ? "#ff0000" : "#00cc00";
-            ctx.fillRect(x, y, fuelWidth, h);
-
+        // 24-12 --animation//
+        // 🌑 DARK OVERLAY (ONLY AFTER PHASE 1) - Draw on top of everything
+        if (finishAnimActive && finishPhase === 1) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${finishOverlayAlpha})`;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
         }
-        //drawFuelBar(ctx, s.car);
-        // new code add //
+
+        // 🎉 CONFETTI DRAW - Draw on top of the line
+        finishConfetti.forEach(p => {
+            const alpha = p.life / p.maxLife;
+            ctx.globalAlpha = alpha;
+
+            ctx.strokeStyle = p.color;
+            ctx.fillStyle = p.color;
+
+            if (p.line) {
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(
+                    p.x - p.vx * 3,
+                    p.y - p.vy * 3
+                );
+                ctx.stroke();
+            } else {
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
+        });
+        ctx.globalAlpha = 1;
+
+        // 26-12 --winner//
+        // Draw WINNER text on top of everything
+        if (finishAnimActive) {
+            ctx.save();
+
+            winnerPulse += 0.08;
+            const pulse = 1 + Math.sin(winnerPulse) * 0.06;
+
+            ctx.translate(WIDTH / 2, HEIGHT / 2 - 40);
+            ctx.scale(winnerScale * pulse, winnerScale * pulse);
+            ctx.globalAlpha = winnerAlpha;
+
+            // 🌟 GLOW LAYER
+            ctx.shadowColor = 'rgba(255, 215, 100, 0.9)';
+            ctx.shadowBlur = winnerGlow;
+
+            // 🏆 GOLD GRADIENT TEXT
+            const grad = ctx.createLinearGradient(0, -50, 0, 50);
+            grad.addColorStop(0, '#fff4a3');
+            grad.addColorStop(0.4, '#ffd34d');
+            grad.addColorStop(0.7, '#ffb703');
+            grad.addColorStop(1, '#c88900');
+
+            ctx.fillStyle = grad;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '900 78px Poppins, Arial';
+
+            ctx.fillText('WINNER!', 0, 0);
+
+            // ✨ SHINE STROKE
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+            ctx.strokeText('WINNER!', 0, 0);
+
+            // ⭐ STARS DECOR (animated glow)
+            // ctx.shadowBlur = 0;
+            // ctx.font = 'bold 26px Arial';
+            // ctx.fillStyle = '#ffe066';
+            // ctx.fillText('⭐   ⭐   ⭐', 0, 62);
+
+            ctx.restore();
+            ctx.globalAlpha = 1;
+        }
+
         // continue loop
         rafRef.current = requestAnimationFrame(loop);
-        useEffect(() => {
-            lastTime = performance.now();
-            rafRef.current = requestAnimationFrame(loop);
-
-            return () => cancelAnimationFrame(rafRef.current);
-        }, []);
-
-        if (isFuelLevel) {
-            drawFuelBar(ctx, s.car);
-        }
     }
 
+
+
+
     useEffect(() => {
-
-
         // React Ref માંથી canvas element લે છે.
         // જો canvas ના મળે તો function return થઈ જાય.
         const canvas = canvasRef.current;
@@ -2540,6 +2761,14 @@ export default function DoodleRoadGame() {
         drawGrid(ctx);
         const s = stateRef.current;
 
+        // 20-12//
+        // ⭐⭐ ADD THIS BLOCK EXACTLY HERE ⭐⭐
+        // s.car.visible = true;
+        // s.car.falling = false;
+        // s.car.finished = false;
+        // s.car.justRefueled = false;
+        // s.car.fuel = s.car.maxFuel;
+
 
         // finish point બતાવવા માટે chequered flag draw કરે છે.
         drawCheckeredFlag(ctx, s.finish.x, s.finish.y, s.finish.w);
@@ -2550,7 +2779,6 @@ export default function DoodleRoadGame() {
 
         // Level બદલાય ત્યારે જૂનો animation loop બંધ કરી દે છે.
         // Memory leak અટકાવે છે.
-
         return () => {
             if (rafRef.current) {
                 cancelAnimationFrame(rafRef.current);
@@ -2560,15 +2788,34 @@ export default function DoodleRoadGame() {
 
     }, [currentLevel]);
 
+
     // લેવલને ફરીથી start કરવાની process કરે
     const restartLevel = () => {
         const config = LEVEL_CONFIGS[currentLevel - 1],
             s = stateRef.current;
 
+        // 13-01 🔁 Finish animation reset
+        finishConfetti = [];
+        finishOverlayAlpha = 0;
+        finishAnimActive = false;
+        finishPhase = 0;
+        finishTimer = 0;
+        finishHold = false;
+
+        // 🏆 Winner text reset
+        winnerScale = 0;
+        winnerAlpha = 1;
+        winnerGlow = 0;
+        winnerPulse = 0;
+        showNextBanner = false;
+
+
         s.path = [];
+
         s.playing = false;
         s.playProgress = 0;
 
+        s.path.length = 0;
         s.car.x = config.carStart.x;
         s.car.y = config.carStart.y;
         s.car.angle = 0;
@@ -2576,15 +2823,41 @@ export default function DoodleRoadGame() {
         s.car.falling = false;
         s.car.fallSpeed = 0;
         s.car.visible = true;
+        s.car.isMoving = true; // 13-01//
+
+        s.car.dead = false;   // 16-01 -- car restart moving //
+        s.car.vx = 0;         // 16-01 -- car restart moving //
+        s.car.vy = 0;       // 16-01  -- car restart moving//
+        s.gameOver = false;   // 16-01 -- car restart moving //
+
+
+
         s.lastGridX = undefined;
         s.lastGridY = undefined;
 
         finishAlertShown.current = false;
 
+
+        // ✅ THIS FIXES GREEN BAR ISSUE // 27-12//
+        s.car.fuel = s.car.maxFuel;
+
+        // 10-01 ✅ RESET PETROL PUMP - Reset all pumps' used status--petrolpump bug//
+        if (config.petrolPump) {
+            if (Array.isArray(config.petrolPump)) {
+                config.petrolPump.forEach(pump => {
+                    pump.used = false;
+                });
+            } else {
+                config.petrolPump.used = false;
+            }
+        }
+
         setScore(0);
         setMode('draw');
         setShowNextLevel(false);
         setGameStarted(false);
+        setGameOver(false);  // 16-01 -- car restart moving//
+        setShowLevelComplete(false); // 16-01  -- car restart moving//
     };
 
 
@@ -2594,11 +2867,10 @@ export default function DoodleRoadGame() {
         setMode('draw');
     };
 
-
     // const selectLevel = (level) => {
     //     setCurrentLevel(level);
     //     setShowLevelSelect(false);
-    // };s
+    // };
 
     return (
         <div className="game-container">
@@ -2621,9 +2893,131 @@ export default function DoodleRoadGame() {
                         </div>
                     </div>
 
-                    <div className="canvas-wrapper mb-4">
-                        <canvas ref={canvasRef} data-testid="game-canvas" />
+                    <div className="canvas-wrapper mb-4 position-relative">
+                        {/* 13-01 <canvas ref={canvasRef} data-testid="game-canvas" />*/}
+
+
+                        <canvas
+                            ref={canvasRef}
+                            width={WIDTH}
+                            height={HEIGHT}
+                            style={{
+                                width: "100%",
+                                maxWidth: "100%",
+                                maxHeight: "calc(100vh - 180px)",
+                                height: "auto",
+                                aspectRatio: "1250 / 600",
+                                display: "block",
+                                margin: "0 auto",
+                                touchAction: "none"
+                            }}
+                        />
+
+                        {/* Overlay Controls */}
+                        <div className={`canvas-overlay-controls ${gameStarted ? 'game-active-controls' : ''}`}>
+                            {!gameStarted ? (
+                                <div className="d-flex gap-2 justify-content-center flex-wrap">
+                                    <button onClick={() => setMode('draw')} className={`btn btn-info btn-game ${mode === 'draw' ? 'active' : ''}`} data-testid="draw-btn">Draw</button>
+                                    <button onClick={startPlay} className="btn btn-success btn-game" data-testid="start-btn">Start</button>
+                                    <button onClick={restartLevel} className="btn btn-danger btn-game" data-testid="clear-btn">Clear</button>
+                                </div>
+                            ) : (
+                                <div className={`bottom-tools ${showLevelComplete ? 'hide-tools' : ''}`}>
+                                    <div className="d-flex align-items-center" style={{ gap: '15px' }}>
+                                        {/* 🔄 RESTART BUTTON */}
+                                        <button onClick={restartLevel} className="btn-icon-styled btn-restart-styled" title="Restart" data-testid="restart-btn">
+                                            <div className="icon-inner">
+                                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M4 12C4 16.4183 7.58172 20 12 20C14.7359 20 17.1524 18.6256 18.621 16.5M4 12C4 7.58172 7.58172 4 12 4C14.4446 4 16.6347 5.09706 18.125 6.875M4 12V6M18.125 6.875V3M18.125 6.875H13.625" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </div>
+                                        </button>
+
+                                        {/* ✏️ ERASER BUTTON */}
+                                        <button onClick={restartLevel} className="btn-icon-styled btn-eraser-styled" title="Eraser" data-testid="eraser-btn">
+                                            <div className="icon-inner">
+                                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M15.232 5.23233L18.768 8.76833M16.732 3.73233C17.2009 3.26343 17.8369 3 18.5 3C19.1631 3 19.7991 3.26343 20.268 3.73233C20.7369 4.20123 21.0003 4.8372 21.0003 5.50033C21.0003 6.16346 20.7369 6.79943 20.268 7.26833L6.5 21.0323H3V17.5323L16.732 3.73233Z" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    {showNextLevel && !showLevelComplete && (
+                                        <button onClick={goToNextLevel} className="btn btn-next ms-auto" data-testid="next-level-btn">
+                                            {currentLevel < 25 ? 'NEXT LEVEL ▶' : '🏆 COMPLETED!'}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 26-12 --banner*/}
+                        {/* 🌟 LEVEL COMPLETE POPUP */}
+
+                        {showLevelComplete && (
+                            <div className="lc-overlay">
+                                <div className="lc-box">
+                                    {/* Sparkle Icon */}
+                                    <div className="lc-sparkle-container">
+                                        <div className="lc-sparkle-wrapper">
+                                            <div className="lc-sparkle-icon">✨</div>
+                                            <div className="lc-sparkle-ring"></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Banner */}
+                                    <div className="lc-banner">LEVEL COMPLETE</div>
+                                    <div className="lc-subtitle">Amazing work! You're unstoppable!</div>
+
+                                    {/* Stars */}
+                                    <div className="lc-stars">
+                                        <div className="lc-star-wrapper">
+                                            <span className="lc-star">⭐</span>
+                                            <span className="lc-star-ping">⭐</span>
+                                        </div>
+                                        <div className="lc-star-wrapper">
+                                            <span className="lc-star">⭐</span>
+                                            <span className="lc-star-ping">⭐</span>
+                                        </div>
+                                        <div className="lc-star-wrapper">
+                                            <span className="lc-star">⭐</span>
+                                            <span className="lc-star-ping">⭐</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Buttons */}
+                                    <div className="lc-buttons">
+                                        <button className="lc-next" onClick={() => {
+                                            setShowLevelComplete(false);
+                                            goToNextLevel();
+                                        }}>
+                                            NEXT LEVEL ➜
+                                        </button>
+                                        <button className="lc-restart" onClick={() => {
+                                            setShowLevelComplete(false);
+                                            restartLevel();
+                                        }}>
+                                            ↻ Restart Level
+                                        </button>
+                                    </div>
+
+                                    {/* Floating Sparkles */}
+                                    <div className="lc-floating-sparkles">
+                                        <span className="lc-floating-sparkle">⭐</span>
+                                        <span className="lc-floating-sparkle">⭐</span>
+                                        <span className="lc-floating-sparkle">⭐</span>
+                                        <span className="lc-floating-sparkle">⭐</span>
+                                        <span className="lc-floating-sparkle">⭐</span>
+                                        <span className="lc-floating-sparkle">⭐</span>
+                                        <span className="lc-floating-sparkle">⭐</span>
+                                        <span className="lc-floating-sparkle">⭐</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
+
 
                     {/* {showLevelSelect && (
                         <div className="modal-backdrop" data-testid="level-selector" onClick={() => setShowLevelSelect(false)}>
@@ -2669,28 +3063,6 @@ export default function DoodleRoadGame() {
                     )
                     } */}
 
-                    {
-                        !gameStarted ? (
-                            <div className="d-flex gap-2 justify-content-center flex-wrap">
-                                {/* <button onClick={() => setShowLevelSelect(true)} className="btn btn-primary btn-game" data-testid="select-level-btn">Levels</button> */}
-                                <button onClick={() => setMode('draw')} className={`btn btn-info btn-game ${mode === 'draw' ? 'active' : ''}`} data-testid="draw-btn">Draw</button>
-                                <button onClick={startPlay} className="btn btn-success btn-game" data-testid="start-btn">Start</button>
-                                <button onClick={restartLevel} className="btn btn-danger btn-game" data-testid="clear-btn">Clear</button>
-                            </div>
-                        ) : (
-                            <div className="d-flex justify-content-between align-items-center">
-                                <div className="d-flex gap-2">
-                                    <button onClick={restartLevel} className="btn btn-icon" title="Restart" data-testid="restart-btn">🔄</button>
-                                    <button onClick={restartLevel} className="btn btn-icon" title="Eraser" data-testid="eraser-btn">✏️</button>
-                                </div>
-                                {showNextLevel && (
-                                    <button onClick={goToNextLevel} className="btn btn-next" data-testid="next-level-btn">
-                                        {currentLevel < 25 ? 'NEXT LEVEL ▶' : '🏆 COMPLETED!'}
-                                    </button>
-                                )}
-                            </div>
-                        )
-                    }
                 </div >
             </div >
         </div >
