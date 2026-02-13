@@ -127,7 +127,8 @@ function checkPetrolPumpCollision(car, pump) {
 function isCarReallyMoving(car) {
     const dx = car.x - car.lastX;
     const dy = car.y - car.lastY;
-    return Math.abs(dx) > 1 || Math.abs(dy) > 1;
+    // Lower threshold to 0.1 to detect very slow climbing // 11-02//
+    return Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1;
 }
 
 
@@ -237,7 +238,7 @@ const LEVEL_CONFIGS = [
         pathColor: '#ef476f',
         carColor: '#d90429',
         obstacles: [
-            { x: 690, y: 365, w: 70, h: 70, moving: true, dx: 2 }
+            { x: 690, y: 365, w: 70, h: 70, }
         ]
     },
     {
@@ -349,11 +350,11 @@ const LEVEL_CONFIGS = [
         carColor: '#b45309',
         petrolPump: [{ x: 660, y: 430, r: 26 }],
         obstacles: [
-            { x: 450, y: 320, w: 60, h: 300, moving: true, dy: 2.5, yRange: [120, 350], bidir: true },
+            { x: 450, y: 320, w: 60, h: 300 },
             { x: 570, y: 470, w: 80, h: 60 },
-            { x: 700, y: 360, w: 70, h: 70, moving: true, dx: 2, xRange: [650, 800], bidir: true },
+            { x: 700, y: 360, w: 70, h: 70 },
             { x: 850, y: 450, w: 90, h: 60 },
-            { x: 1000, y: 370, w: 60, h: 60, moving: true, dy: -2.3, yRange: [150, 350], bidir: true },
+            { x: 1000, y: 370, w: 60, h: 60 },
         ]
     },
     {
@@ -390,11 +391,11 @@ const LEVEL_CONFIGS = [
         petrolPump: [{ x: 970, y: 370, r: 26 }],
         obstacles: [
             // two narrow vertical walls that move closer/further
-            { x: 575, y: 220, w: 30, h: 420, moving: true, dx: 1.8, xRange: [575, 635], bidir: true },
-            { x: 885, y: 220, w: 30, h: 440, moving: true, dx: -1.8, xRange: [835, 895], bidir: true },
+            { x: 575, y: 220, w: 30, h: 420 },
+            { x: 885, y: 220, w: 30, h: 440 },
 
             // final small moving blocker
-            { x: 1015, y: 380, w: 60, h: 60, moving: true, dy: 2.5, yRange: [180, 360], bidir: true },
+            { x: 1015, y: 380, w: 60, h: 60 },
         ]
     },
 
@@ -412,13 +413,13 @@ const LEVEL_CONFIGS = [
         carColor: "#8b6800",
         petrolPump: [{ x: 890, y: 290, r: 26 }],
         obstacles: [
-            { x: 535, y: 240, w: 50, h: 420, moving: true, dy: 3.2, yRange: [120, 360], bidir: true },
-            { x: 915, y: 240, w: 50, h: 420, moving: true, dy: -3.2, yRange: [120, 360], bidir: true },
+            { x: 535, y: 240, w: 50, h: 420 },
+            { x: 915, y: 240, w: 50, h: 420 },
 
             // chaotic moving pinballs
-            { x: 1095, y: 250, w: 70, h: 70, moving: true, dx: 3.5, xRange: [1045, 1175], bidir: true },
-            { x: 1095, y: 460, w: 70, h: 70, moving: true, dx: -3.5, xRange: [1045, 1175], bidir: true },
-            { x: 985, y: 370, w: 60, h: 60, moving: true, dy: 3, yRange: [180, 360], bidir: true },
+            { x: 1095, y: 250, w: 70, h: 70 },
+            { x: 1095, y: 460, w: 70, h: 70 },
+            { x: 985, y: 370, w: 60, h: 60 },
         ]
     },
     {
@@ -477,19 +478,19 @@ const LEVEL_CONFIGS = [
         ],
         obstacles: [
             // Small rapidly moving mines everywhere
-            { x: 380, y: 320, w: 45, h: 45, moving: true, dx: 5, xRange: [350, 500], bidir: true },
-            { x: 420, y: 390, w: 45, h: 45, moving: true, dy: 4.5, yRange: [200, 340], bidir: true },
-            { x: 480, y: 460, w: 45, h: 45, moving: true, dx: -5, xRange: [380, 520], bidir: true },
+            { x: 380, y: 320, w: 45, h: 45 },
+            { x: 420, y: 390, w: 45, h: 45 },
+            { x: 480, y: 460, w: 45, h: 45 },
 
-            { x: 620, y: 250, w: 45, h: 45, moving: true, dy: -4.8, yRange: [160, 300], bidir: true },
-            { x: 680, y: 470, w: 45, h: 45, moving: true, dx: 4.5, xRange: [580, 720], bidir: true },
-            { x: 720, y: 390, w: 45, h: 45, moving: true, dy: 4.2, yRange: [180, 320], bidir: true },
+            { x: 620, y: 250, w: 45, h: 45 },
+            { x: 680, y: 470, w: 45, h: 45 },
+            { x: 720, y: 390, w: 45, h: 45 },
 
-            { x: 880, y: 320, w: 45, h: 45, moving: true, dx: -4.8, xRange: [780, 920], bidir: true },
-            { x: 920, y: 390, w: 45, h: 45, moving: true, dy: -4.5, yRange: [200, 340], bidir: true },
-            { x: 980, y: 450, w: 45, h: 45, moving: true, dx: 5, xRange: [880, 1020], bidir: true },
+            { x: 880, y: 320, w: 45, h: 45 },
+            { x: 920, y: 390, w: 45, h: 45 },
+            { x: 980, y: 450, w: 45, h: 45 },
 
-            { x: 1050, y: 320, w: 45, h: 45, moving: true, dy: 4.8, yRange: [180, 320], bidir: true },
+            { x: 1050, y: 320, w: 45, h: 45 },
         ]
     },
     {
@@ -510,11 +511,11 @@ const LEVEL_CONFIGS = [
         ],
         obstacles: [
             // two narrow vertical walls that move closer/further
-            { x: 475, y: 260, w: 30, h: 420, moving: true, dx: 1.8, xRange: [475, 535], bidir: true },
-            { x: 775, y: 220, w: 30, h: 440, moving: true, dx: -1.8, xRange: [735, 795], bidir: true },
+            { x: 475, y: 260, w: 30, h: 420 },
+            { x: 775, y: 220, w: 30, h: 440 },
 
             // final small moving blocker
-            { x: 975, y: 420, w: 60, h: 60, moving: true, dy: 2.5, yRange: [180, 360], bidir: true },
+            { x: 975, y: 420, w: 60, h: 60 },
         ]
     },
     {
@@ -534,12 +535,11 @@ const LEVEL_CONFIGS = [
             // static angled blockers
             { x: 435, y: 290, w: 60, h: 80 },
             { x: 535, y: 450, w: 60, h: 80 },
-            { x: 635, y: 290, w: 50, h: 420, moving: true, dx: 2, xRange: [615, 715], bidir: true },
+            { x: 635, y: 290, w: 50, h: 420, },
             { x: 955, y: 290, w: 60, h: 350 },
-            { x: 775, y: 420, w: 70, h: 70, moving: true, dy: 2.8, yRange: [180, 360], bidir: true },
+            { x: 775, y: 420, w: 70, h: 70 },
         ]
     },
-
 
 ];
 
@@ -633,6 +633,7 @@ function drawFuelBar(ctx, car) {
 
     ctx.restore();
 }
+
 
 // Finish line નું checkered flag draw કરે છે.
 function drawCheckeredFlag(ctx, cx, cy, size = 44) {
@@ -971,6 +972,24 @@ export default function DoodleRoadGame() {
 
         function up() {
             s.isDrawing = false;
+            // 🎨 Path Smoothing: Reduces jagged edges for a smoother ride // 11-02//
+            if (s.path.length > 3) {
+                const smoothed = [];
+                smoothed.push(s.path[0]);
+                for (let i = 1; i < s.path.length - 1; i++) {
+                    const p = s.path[i - 1], c = s.path[i], n = s.path[i + 1];
+                    if (c.break || p.break || n.break) {
+                        smoothed.push(c);
+                    } else {
+                        smoothed.push({
+                            x: (p.x + c.x + n.x) / 3,
+                            y: (p.y + c.y + n.y) / 3
+                        });
+                    }
+                }
+                smoothed.push(s.path[s.path.length - 1]);
+                s.path = smoothed;
+            }
         }
 
         // ensure state arrays exist
@@ -1045,6 +1064,7 @@ export default function DoodleRoadGame() {
             s.playing = true; // 31-01: Game is active even if falling
             s.playProgress = 0;
             s.car.falling = true;
+            s.car.wasOnPath = false; // 13-02 -- No path drawn//
             s.car.vy = 0;
             if (!rafRef.current) rafRef.current = requestAnimationFrame(loop);
             setMode('play');
@@ -1057,7 +1077,7 @@ export default function DoodleRoadGame() {
         const dx = firstPoint.x - s.car.x;
         const dy = firstPoint.y - s.car.y;
         const distToStart = Math.hypot(dx, dy);
-        const SNAP_THRESHOLD = 40; // 🎯 Increased threshold for better magnetic snapping
+        const SNAP_THRESHOLD = 50; // 🎯 Path must be very close to car - no gap allowed
 
         if (distToStart <= SNAP_THRESHOLD) {
             // ensure path begins from car so followPath has a sensible starting segment
@@ -1074,12 +1094,13 @@ export default function DoodleRoadGame() {
             s.playing = true;
             s.playProgress = 0;
             s.car.finished = false;
+            s.car.wasOnPath = true; // 13-02 -- Touched path //
 
             console.log('startPlay: snapped to start', { playProgress: s.playProgress, pathLen: s.path.length });
         } else {
-            // try to find nearest point on path regardless of vertical direction
-            const HORIZ_TOL = 150; // 🎯 Much more forgiving horizontal range
-            const VERT_TOL = 450;  // 🎯 Much more forgiving vertical range
+            // Path must be VERY close to car - no gaps allowed
+            const HORIZ_TOL = 60; // 🎯 Strict horizontal distance
+            const VERT_TOL = 80;  // 🎯 Strict vertical distance
 
             let cum = [0];
             for (let i = 1; i < s.path.length; i++) {
@@ -1104,18 +1125,13 @@ export default function DoodleRoadGame() {
                 }
             }
 
-            // Fallback: if no point found but path exists, maybe just snap to path start if it's "kind of" in front //28-01//
-            if (bestIdx === -1 && s.path.length > 0) {
-                const p = s.path[0];
-                if (p.x >= s.car.x - 50) { // If path is roughly in front or slightly behind
-                    bestIdx = 0;
-                }
-            }
+            // ❌ Removed fallback - path MUST be close to car
+            // If no close path found, car will fall (correct behavior)
 
             if (bestIdx !== -1) {
                 s.playProgress = cum[bestIdx] || 0;
 
-                const CAR_OFFSET = -29;
+                const CAR_OFFSET = -30;
                 let angle = 0;
                 if (bestIdx < s.path.length - 1) {
                     angle = Math.atan2(s.path[bestIdx + 1].y - s.path[bestIdx].y, s.path[bestIdx + 1].x - s.path[bestIdx].x);
@@ -1128,11 +1144,14 @@ export default function DoodleRoadGame() {
                 s.car.x = s.path[bestIdx].x + oX;
                 s.car.y = s.path[bestIdx].y + oY;
                 s.car.angle = angle;
+                s.car.smoothedAngle = angle; // Initialize smoothing
+                s.car.currentSpeed = s.playSpeed; // Initialize speed smoothing
 
                 s.car.falling = false;
                 s.car.vy = 0;
                 s.playing = true;
                 s.car.finished = false;
+                s.car.wasOnPath = true; // 13-02 -- Touched path //
 
                 console.log('startPlay: attached at bestIdx', { bestIdx, playProgress: s.playProgress, car: { x: s.car.x, y: s.car.y } });
             } else {
@@ -1142,6 +1161,7 @@ export default function DoodleRoadGame() {
                 s.playProgress = 0;
                 s.car.finished = false;
                 s.car.falling = true;
+                s.car.wasOnPath = false; // 13-02 -- No attach point //
                 s.car.vy = 0;
                 if (!rafRef.current) rafRef.current = requestAnimationFrame(loop);
                 setMode('play');
@@ -1479,6 +1499,24 @@ export default function DoodleRoadGame() {
         return null;
     }
 
+    function checkCollision(car, obstacles) { // 10-02 --carobstclestouch//
+        // Shrink hitbox slightly to be fair
+        const hitX = 50;
+        const hitY = 30;
+
+        for (let o of obstacles) {
+            if (
+                car.x + hitX / 2 > o.x &&
+                car.x - hitX / 2 < o.x + o.w &&
+                car.y + hitY / 2 > o.y &&
+                car.y - hitY / 2 < o.y + o.h
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 
     function loop(ts) {
@@ -1541,7 +1579,7 @@ export default function DoodleRoadGame() {
         if (!s.car.finished) {
             const dx = s.car.x - s.finish.x;
             const dy = s.car.y - s.finish.y;
-            const FINISH_RADIUS = 35; // Slightly larger for easier detection
+            const FINISH_RADIUS = 65; // Much larger for easier jump-to-finish detection
 
             if (Math.hypot(dx, dy) <= FINISH_RADIUS) {
                 // 🚗 Car ને finish point પર ઊભી રાખો
@@ -1595,13 +1633,58 @@ export default function DoodleRoadGame() {
 
                     const speed = s.playSpeed || 120;
                     s.car.vx = Math.cos(s.car.angle) * speed;
-                    s.car.vy = Math.sin(s.car.angle) * speed; // Preserve vertical momentum
+                    s.car.vy = Math.sin(s.car.angle) * speed - 150; // 🚀 Added Jump Boost!
                 } else {
                     // GROUNDED ON PATH
-                    s.car.x = pos.x;
-                    s.car.y = pos.y;
-                    s.car.angle = pos.angle;
-                    s.playProgress += s.playSpeed * dt;
+                    // Check bounds while on path (Strict Touch Detection)
+                    // Car Bounds: horizontal 37.5, top 20, bottom 30 from center
+                    if (pos.x < 37.5 || pos.x > WIDTH - 37.5 || pos.y < 20 || pos.y > HEIGHT - 30) {
+                        s.playing = false;
+                        s.gameOver = true;
+                        if (!s.car.finished) setShowGameOver(true);
+                    } else {
+                        // 🛑 WALL / STEEP SLOPE DETECTION // 13-02 //
+                        const targetAngle = pos.angle;
+                        const slope = Math.sin(targetAngle); // Positive = Downhill, Negative = Uphill
+
+                        // Base movement speed
+                        let targetSpeed = s.playSpeed || 100;
+
+                        // 🧱 Wall Logic: If slope is very steep uphill (like a wall or loop start), STOP.
+                        // Threshold -0.85 is roughly 60 degrees uphill.
+                        if (slope < -0.85) {
+                            targetSpeed = 0;
+                        } else {
+                            // Minor gravity effect for normal hills
+                            targetSpeed += slope * 100;
+                            if (targetSpeed < 20) targetSpeed = 20; // Maintain min speed on gentle hills
+                        }
+
+                        // 1️⃣ Smooth Speed Lerp
+                        if (s.car.currentSpeed === undefined) s.car.currentSpeed = targetSpeed;
+
+                        // If hitting a wall, stop instantly (or very fast), else smooth accel
+                        const speedSmoothing = targetSpeed === 0 ? 15 : 5;
+                        s.car.currentSpeed += (targetSpeed - s.car.currentSpeed) * speedSmoothing * dt;
+
+                        // 2️⃣ Smooth Angle Lerp
+                        if (s.car.smoothedAngle === undefined) s.car.smoothedAngle = targetAngle;
+                        let angleDiff = targetAngle - s.car.smoothedAngle;
+                        angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff)); // Normalize to [-PI, PI]
+                        s.car.smoothedAngle += angleDiff * 15 * dt;
+
+                        // 3️⃣ Smooth Position Lerp (Fluid movement)
+                        // Factor of 30 ensures it stays very close to the line while filtering micro-jitters
+                        s.car.x += (pos.x - s.car.x) * 30 * dt;
+                        s.car.y += (pos.y - s.car.y) * 30 * dt;
+                        s.car.angle = s.car.smoothedAngle;
+
+                        // Move based on smoothed progress
+                        s.playProgress += s.car.currentSpeed * dt;
+
+                        // Safety: Don't let car go back before path start
+                        if (s.playProgress < 0) s.playProgress = 0;
+                    }
                 }
             } else {
                 // AIRBORNE or ON OBSTACLE
@@ -1623,9 +1706,22 @@ export default function DoodleRoadGame() {
                 s.car.x += (s.car.vx || 0) * dt;
                 s.car.y += s.car.vy * dt;
 
-                // 🔄 Rotate car to follow velocity (Nose dive effect) //04-02 --carjump//
-                if (s.car.falling && Math.hypot(s.car.vx, s.car.vy) > 10) {
-                    s.car.angle = Math.atan2(s.car.vy, s.car.vx);
+                // 🔄 13-02 -- CONDITIONAL FALLING LOGIC 🔄
+                if (s.car.falling) {
+                    if (s.car.wasOnPath) { // 13-02 -- Check if was on path //
+                        // 🌀 If was on path: ROUND ROUND (Rotate)
+                        const rotationSpeed = 9;
+                        s.car.angle += rotationSpeed * dt;
+                        s.car.smoothedAngle = s.car.angle;
+                    } else {
+                        // 📏 If no path: Sidhi J Pade (Straight/Horizontal)
+                        const targetFallAngle = 0;
+                        if (s.car.smoothedAngle === undefined) s.car.smoothedAngle = targetFallAngle;
+                        let fAngleDiff = targetFallAngle - s.car.smoothedAngle;
+                        fAngleDiff = Math.atan2(Math.sin(fAngleDiff), Math.cos(fAngleDiff));
+                        s.car.smoothedAngle += fAngleDiff * 5 * dt; // 13-02 -- Smooth angle change //
+                        s.car.angle = s.car.smoothedAngle;
+                    }
                 }
 
                 // Landing on Top of Obstacle
@@ -1662,13 +1758,14 @@ export default function DoodleRoadGame() {
 
                                 // Check vertical landing window
                                 if (s.car.y >= targetY - 40 && s.car.y <= targetY + 20) {
-                                    s.car.x = targetX;
+                                    // 1. Re-attach to path and sync progress
                                     s.car.y = targetY;
-                                    s.car.angle = angle;
-                                    s.car.falling = false;
                                     s.car.vy = 0;
                                     s.car.vx = 0;
-                                    s.playProgress = totalDist + segLen * t;
+                                    s.car.falling = false;
+                                    s.playProgress = totalDist + t * segLen; // ⭐ Sync progress to landing point
+                                    s.car.currentSpeed = s.playSpeed;        // ⭐ Resume speed
+
                                     break;
                                 }
                             }
@@ -1677,13 +1774,31 @@ export default function DoodleRoadGame() {
                     }
                 }
 
-                // Game Over if fell off screen
-                if (s.car.y >= STOP_UPDATE_BELOW) {
+                // Game Over if car touches canvas boundaries (Strict Touch Detection)
+                // Car Bounds: horizontal 37.5, top 20, bottom 30 from center
+                if (s.car.x < 37.5 || s.car.x > WIDTH - 37.5 || s.car.y < 20 || s.car.y > HEIGHT - 30) {
                     s.playing = false;
                     s.gameOver = true;
                     s.car.visible = false;
                     if (!s.car.finished) setShowGameOver(true);
                 }
+            }
+
+            // 🛑 GLOBAL OBSTACLE COLLISION CHECK (Check EVERY frame, even on path) // 10-02 --carobstclestouch//
+            if (checkCollision(s.car, obstacles) && !s.car.isColliding) {
+                s.car.isColliding = true; // 🕒 Prevent multiple triggers
+                s.playing = false;
+                s.car.vx = 0;
+                s.car.vy = 0;
+
+                // 🕒 2-3 Second delay before Game Over popup // 11-02//
+                setTimeout(() => {
+                    // Check if we are still in a colliding state (hasn't restarted)
+                    if (s.car.isColliding) {
+                        s.gameOver = true;
+                        if (!s.car.finished) setShowGameOver(true);
+                    }
+                }, 2500);
             }
 
             // ⛽ Fuel Drain & 🏆 Score Increment while moving (AFTER position update) // 04-02 --fuelworking//
@@ -1884,6 +1999,10 @@ export default function DoodleRoadGame() {
         s.car.dead = false;   // 16-01 -- car restart moving //
         s.car.vx = 0;         // 16-01 -- car restart moving //
         s.car.vy = 0;       // 16-01  -- car restart moving//
+        s.car.wasOnPath = false;         // 13-02 -- Reset wasOnPath //
+        s.car.smoothedAngle = undefined; // Reset smoothing
+        s.car.currentSpeed = undefined;  // Reset speed smoothing
+        s.car.isColliding = false;      // 🕒 Reset collision delay flag
         s.gameOver = false;   // 16-01 -- car restart moving //
 
 
@@ -2031,25 +2150,27 @@ export default function DoodleRoadGame() {
                                             Amazing work! You're unstoppable!
                                         </div>
 
-                                        {/* 28-01 🏆 Score Display */}
-                                        <div className="lc-score-display">
-                                            <div className="lc-score-label">SCORE</div>
-                                            <div className="lc-score-value">{score}</div>
-                                        </div>
+                                        {/* 🏆 Score & Stars Row */}
+                                        <div className="lc-stats-row">
+                                            <div className="lc-score-display">
+                                                <div className="lc-score-label">SCORE</div>
+                                                <div className="lc-score-value">{score}</div>
+                                            </div>
 
-                                        {/* Stars */}
-                                        <div className="lc-stars">
-                                            <div className="lc-star-wrapper">
-                                                <span className="lc-star">⭐</span>
-                                                <span className="lc-star-ping">⭐</span>
-                                            </div>
-                                            <div className="lc-star-wrapper">
-                                                <span className="lc-star">⭐</span>
-                                                <span className="lc-star-ping">⭐</span>
-                                            </div>
-                                            <div className="lc-star-wrapper">
-                                                <span className="lc-star">⭐</span>
-                                                <span className="lc-star-ping">⭐</span>
+                                            {/* Stars */}
+                                            <div className="lc-stars">
+                                                <div className="lc-star-wrapper">
+                                                    <span className="lc-star">⭐</span>
+                                                    <span className="lc-star-ping">⭐</span>
+                                                </div>
+                                                <div className="lc-star-wrapper">
+                                                    <span className="lc-star">⭐</span>
+                                                    <span className="lc-star-ping">⭐</span>
+                                                </div>
+                                                <div className="lc-star-wrapper">
+                                                    <span className="lc-star">⭐</span>
+                                                    <span className="lc-star-ping">⭐</span>
+                                                </div>
                                             </div>
                                         </div>
 
